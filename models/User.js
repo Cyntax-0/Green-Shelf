@@ -47,7 +47,37 @@ const userSchema = new mongoose.Schema({
     registration: String,
     verificationDocumentUrl: String,
     verificationSubmittedAt: Date,
-    rejectionReason: String
+    rejectionReason: String,
+    organizationName: String,
+    // Admin history for tracking approvals/rejections
+    adminHistory: [{
+      action: { type: String, enum: ['approved', 'rejected'] },
+      adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      adminEmail: String,
+      reason: String,
+      timestamp: { type: Date, default: Date.now }
+    }]
+  },
+  location: {
+    latitude: {
+      type: Number,
+      min: -90,
+      max: 90
+    },
+    longitude: {
+      type: Number,
+      min: -180,
+      max: 180
+    },
+    address: String,
+    city: String,
+    state: String,
+    country: String,
+    zipCode: String,
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
   },
   notifications: [
     {
@@ -69,6 +99,9 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Geospatial index for location-based queries
+userSchema.index({ 'location.latitude': 1, 'location.longitude': 1 });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

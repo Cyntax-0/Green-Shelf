@@ -12,7 +12,10 @@
     justify-content: center;
     z-index: 1000;
     animation: fadeIn 0.3s ease;
-    padding: 1rem;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+    box-sizing: border-box;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 @keyframes fadeIn {
@@ -334,11 +337,12 @@
 
 @media (max-width: 480px) {
     .login-overlay {
-        padding: 0.5rem;
+        padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
     }
 
     .login-card {
         padding: 1.75rem 1.25rem;
+        margin: auto 0;
     }
 
     .login-card h2 {
@@ -352,5 +356,24 @@
 
     .login-card button[type="submit"] {
         padding: 1rem;
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 360px) {
+    .login-overlay .close-button {
+        top: max(1rem, env(safe-area-inset-top));
+        right: max(1rem, env(safe-area-inset-right));
+        width: 36px;
+        height: 36px;
+        font-size: 1.25rem;
+    }
+
+    .login-card {
+        padding: 1.25rem 1rem;
+    }
+
+    .login-card h2 {
+        font-size: 1.25rem;
     }
 }

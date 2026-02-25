@@ -1,7 +1,6 @@
 // --------------------- NGO PROFILE ---------------------
 import React, { useState, useEffect } from "react";
 import api from "./services/api";
-import { sampleNGOReceivedDonations, sampleMessages } from "./sampleData";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import "./styles/Profile.css";
@@ -55,7 +54,7 @@ const NGOProfile = () => {
     // ------------------ END NEW STATE ------------------
 
     const navigate = useNavigate();
-    const handleNavigateHome = () => navigate("/");
+    const handleNavigateHome = () => navigate("/home");
     const displayName = user?.profile?.firstName || user?.username || (user?.email ? user.email.split('@')[0] : 'NGO');
 
     const handleVerificationDocument = (e) => {
@@ -68,17 +67,6 @@ const NGOProfile = () => {
         };
         reader.readAsDataURL(file);
     };
-
-    // Seed sample data for NGO page (client-only)
-    useEffect(() => {
-        if (receivedDonations.length === 0) {
-            setReceivedDonations(sampleNGOReceivedDonations);
-        }
-        if (messages.length === 0) {
-            setMessages(sampleMessages);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     // Sync verification status and notifications from server user
     useEffect(() => {

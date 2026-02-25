@@ -61,6 +61,27 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
+
+    // Handle validation errors (e.g. username too short) with a clear 4xx response
+    if (error.name === 'ValidationError') {
+      const usernameErr = error.errors && error.errors.username;
+      let message = 'Invalid registration data';
+
+      if (usernameErr && usernameErr.kind === 'minlength') {
+        message = 'Username must be at least 3 characters long.';
+      } else if (error.errors) {
+        const firstError = Object.values(error.errors)[0];
+        if (firstError && typeof firstError.message === 'string') {
+          message = firstError.message;
+        }
+      }
+
+      return res.status(400).json({
+        success: false,
+        message
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -242,6 +263,95 @@ router.put('/profile', async (req, res) => {
     });
   } catch (error) {
     console.error('Profile update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// Update user location
+router.put('/location', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+    const decoded = jwt.verify(token, jwtSecret);
+    const user = await User.findById(decoded.userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent sellers and NGOs from changing their location once set
+    const isSellerOrNGO = user.role === 'seller' || user.role === 'ngo';
+    const hasExistingLocation = user.location?.latitude && user.location?.longitude;
+    
+    if (isSellerOrNGO && hasExistingLocation) {
+      return res.status(403).json({
+        success: false,
+        message: `As a ${user.role === 'seller' ? 'seller/shop' : 'NGO'}, your location cannot be changed once set. This ensures consistency for your customers and delivery serviceability.`
+      });
+    }
+
+    // Validate location data
+    const locationData = req.body.location || {};
+    
+    // Validate coordinates if provided
+    if (locationData.latitude !== undefined) {
+      if (typeof locationData.latitude !== 'number' || locationData.latitude < -90 || locationData.latitude > 90) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid latitude. Must be between -90 and 90'
+        });
+      }
+    }
+    
+    if (locationData.longitude !== undefined) {
+      if (typeof locationData.longitude !== 'number' || locationData.longitude < -180 || locationData.longitude > 180) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid longitude. Must be between -180 and 180'
+        });
+      }
+    }
+
+    // For sellers/NGOs, require coordinates
+    if (isSellerOrNGO && (!locationData.latitude || !locationData.longitude)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Latitude and longitude are required for sellers and NGOs'
+      });
+    }
+
+    // Update location, preserving existing data if not provided
+    const currentLocation = user.location || {};
+    user.location = {
+      ...currentLocation,
+      ...locationData,
+      lastUpdated: new Date()
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Location updated successfully',
+      data: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Location update error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

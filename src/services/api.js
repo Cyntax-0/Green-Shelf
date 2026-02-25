@@ -55,12 +55,32 @@ export const api = {
         headers: { Authorization: `Bearer ${token}` },
       });
     },
+
+    async updateLocation(token, location) {
+      return api.request('/auth/location', {
+        method: 'PUT',
+        body: { location },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+  },
+
+  ngos: {
+    async getVerified() {
+      return api.request('/ngos/verified', {
+        method: 'GET',
+      });
+    },
   },
 
   products: {
-    async getAll(filters = {}) {
+    async getAll(filters = {}, token = null) {
       const params = new URLSearchParams(filters);
-      return api.request(`/products?${params}`);
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      return api.request(`/products?${params}`, {
+        method: 'GET',
+        headers
+      });
     },
 
     async getById(id) {
@@ -103,6 +123,13 @@ export const api = {
 
     async getPricing(id) {
       return api.request(`/products/${id}/pricing`);
+    },
+
+    async getMyDonations(token) {
+      return api.request('/products/my-donations/list', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
     },
   },
 

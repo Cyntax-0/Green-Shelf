@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import api from "./services/api";
-import { sampleCustomerDonations, sampleWishlist } from "./sampleData";
 import "./styles/Profile.css";
 
 const CustomerProfile = () => {
@@ -33,14 +32,25 @@ const CustomerProfile = () => {
     const [donations, setDonations] = useState([]);
 
     // ------------------ NEW STATES ------------------
-    const [wishlist, setWishlist] = useState([]);
-
     const [notifications, setNotifications] = useState([]);
 
     const [historySummary, setHistorySummary] = useState({
         totalOrders: orders.length,
         totalDonations: donations.length,
         mostPurchasedCategory: "Fruits"
+    });
+
+    const [verifiedNGOs, setVerifiedNGOs] = useState([]);
+    const [loadingNGOs, setLoadingNGOs] = useState(false);
+    const [selectedNGO, setSelectedNGO] = useState(null);
+    const [directDonationForm, setDirectDonationForm] = useState({
+        itemName: '',
+        quantity: 1,
+        quantityUnit: 'units',
+        category: 'Fruits',
+        foodType: 'veg',
+        expiry: '',
+        notes: ''
     });
     // ------------------ END NEW STATES ------------------
 
@@ -60,7 +70,7 @@ const CustomerProfile = () => {
 
     const navigate = useNavigate();
 
-    const handleNavigateHome = () => navigate("/");
+    const handleNavigateHome = () => navigate("/home");
 
     // Load cart from server when authenticated
     React.useEffect(() => {
@@ -88,16 +98,54 @@ const CustomerProfile = () => {
         loadCart();
     }, [token]);
 
-    // Seed sample data for client-only views
+    // Fetch verified NGOs when donate-to-ngo tab is active
     React.useEffect(() => {
-        if (donations.length === 0) {
-            setDonations(sampleCustomerDonations);
-        }
-        if (wishlist.length === 0) {
-            setWishlist(sampleWishlist);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        const fetchNGOs = async () => {
+            if (activeTab === 'donate-to-ngo') {
+                setLoadingNGOs(true);
+                try {
+                    const response = await api.ngos.getVerified();
+                    if (response.success) {
+                        setVerifiedNGOs(response.data || []);
+                    }
+                } catch (error) {
+                    console.error('Error fetching NGOs:', error);
+                    setBanner({ type: 'error', text: 'Failed to load verified NGOs' });
+                    setTimeout(() => setBanner(null), 3000);
+                } finally {
+                    setLoadingNGOs(false);
+                }
+            }
+        };
+        fetchNGOs();
+    }, [activeTab]);
+
+    // Load current user's donation listings from server so they persist across logins
+    React.useEffect(() => {
+        const loadDonations = async () => {
+            try {
+                if (!token) return;
+                const response = await api.products.getMyDonations(token);
+                if (response.success && response.data?.products) {
+                    const mapped = response.data.products.map(p => ({
+                        id: p._id || p.id,
+                        name: p.name,
+                        image: p.image,
+                        foodType: p.foodType,
+                        category: p.category,
+                        quantity: p.quantity,
+                        quantityUnit: p.quantityUnit,
+                        expiry: p.expiry,
+                        date: p.createdAt ? new Date(p.createdAt).toLocaleString() : ''
+                    }));
+                    setDonations(mapped);
+                }
+            } catch (e) {
+                console.error('Failed to load donations', e);
+            }
+        };
+        loadDonations();
+    }, [token]);
 
     const handleSaveProfile = async () => {
         const p = profile;
@@ -185,6 +233,26 @@ const CustomerProfile = () => {
             };
             const response = await api.products.create(productData, token);
             if (response.success) {
+                const created = response.data || {};
+
+                // Append this donation to \"My Donations\" list so it appears immediately
+                setDonations((prev) => [
+                    ...prev,
+                    {
+                        id: created._id || created.id || `donation-${Date.now()}`,
+                        name: created.name || donationForm.name,
+                        image: created.image || donationForm.imageUrl || "https://via.placeholder.com/300x200?text=Donation",
+                        foodType: created.foodType || donationForm.foodType,
+                        category: created.category || donationForm.category,
+                        quantity: created.quantity ?? parseInt(donationForm.quantityValue, 10),
+                        quantityUnit: created.quantityUnit || donationForm.quantityUnit,
+                        expiry: created.expiry || donationForm.expiry,
+                        date: created.createdAt
+                            ? new Date(created.createdAt).toLocaleString()
+                            : new Date().toLocaleString(),
+                    },
+                ]);
+
                 setDonationForm({
                     name: "",
                     imageUrl: "",
@@ -250,10 +318,10 @@ const CustomerProfile = () => {
                     <button className={activeTab === "cart" ? "active" : ""} onClick={() => setActiveTab("cart")}>Cart ({cart.length})</button>
                     <button className={activeTab === "orders" ? "active" : ""} onClick={() => setActiveTab("orders")}>Orders</button>
                     <button className={activeTab === "donations" ? "active" : ""} onClick={() => setActiveTab("donations")}>My Donations</button>
+                    <button className={activeTab === "donate-to-ngo" ? "active" : ""} onClick={() => setActiveTab("donate-to-ngo")}>💝 Donate to NGO</button>
                     <button className={activeTab === "listings" ? "active" : ""} onClick={() => setActiveTab("listings")}>My Listings</button>
 
-                    {/* ----------- NEW TABS ------------ */}
-                    <button className={activeTab === "wishlist" ? "active" : ""} onClick={() => setActiveTab("wishlist")}>Wishlist ({wishlist.length})</button>
+                    {/* ----------- NEW TABS (wishlist removed) ------------ */}
                     <button className={activeTab === "notifications" ? "active" : ""} onClick={() => setActiveTab("notifications")}>Notifications ({notifications.filter(n => !n.read).length})</button>
                     <button className={activeTab === "history" ? "active" : ""} onClick={() => setActiveTab("history")}>History Summary</button>
                 </nav>
@@ -369,21 +437,29 @@ const CustomerProfile = () => {
                 {/* -------- DONATIONS -------- */}
                 {activeTab === "donations" && (
                     <div className="donations-section">
-                        <h2>My Donations</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h2>My Donations</h2>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button className="primary" onClick={() => setActiveTab('donate-to-ngo')}>
+                                    💝 Donate to Verified NGO
+                                </button>
+                                {!donationFormOpen && (
+                                    <button className="primary" onClick={handleDonateItem}>
+                                        + Create Donation Listing
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                         <div style={{ marginBottom: 16 }}>
                             <input
                                 type="text"
                                 placeholder="Filter by address"
                                 value={donationLocationFilter}
                                 onChange={(e) => setDonationLocationFilter(e.target.value)}
-                                style={{ padding: '8px', width: '300px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                style={{ padding: '8px', width: '300px', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(255, 255, 255, 0.05)', color: 'rgba(232, 237, 242, 0.9)' }}
                             />
                         </div>
-                        {!donationFormOpen ? (
-                            <button className="primary" onClick={handleDonateItem}>
-                                Make New Donation
-                            </button>
-                        ) : (
+                        {!donationFormOpen ? null : (
                             <div className="inline-form">
                                 <div className="row">
                                     <input
@@ -515,7 +591,17 @@ const CustomerProfile = () => {
                                     <p><strong>Date:</strong> {donation.date}</p>
                                     <button
                                         className="danger"
-                                        onClick={() => setDonations(donations.filter(d => d.id !== donation.id))}
+                                        onClick={async () => {
+                                            try {
+                                                if (token && donation.id) {
+                                                    await api.products.delete(donation.id, token);
+                                                }
+                                            } catch (e) {
+                                                console.error('Failed to remove donation', e);
+                                            } finally {
+                                                setDonations(donations.filter(d => d.id !== donation.id));
+                                            }
+                                        }}
                                     >Remove</button>
                                 </div>
                             ))}
@@ -525,19 +611,189 @@ const CustomerProfile = () => {
                 )}
 
 
-                {/* -------- WISHLIST (NEW) -------- */}
-                {activeTab === "wishlist" && (
-                    <div className="wishlist-section">
-                        <h2>My Wishlist</h2>
-                        {wishlist.length === 0 ? (
-                            <p>No items in wishlist.</p>
-                        ) : (
-                        wishlist.map(item => (
-                            <div key={item.id} className="wishlist-item">
-                                <span>{item.name}</span>
-                                <span>${item.price}</span>
+                {/* -------- DONATE TO NGO -------- */}
+                {activeTab === "donate-to-ngo" && (
+                    <div className="donate-to-ngo-section card">
+                        <h2>Donate to Verified NGOs</h2>
+                        {loadingNGOs ? (
+                            <p>Loading verified NGOs...</p>
+                        ) : verifiedNGOs.length === 0 ? (
+                            <p>No verified NGOs available at the moment.</p>
+                        ) : !selectedNGO ? (
+                            <div className="products-grid">
+                                {verifiedNGOs.map(ngo => (
+                                    <div key={ngo._id} className="product-card border" style={{ cursor: 'pointer' }} onClick={() => setSelectedNGO(ngo)}>
+                                        <div className="product-header">
+                                            <h4>{ngo.name}</h4>
+                                            <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}>✓ Verified</span>
+                                        </div>
+                                        <div className="product-details">
+                                            <p><strong>Email:</strong> {ngo.email}</p>
+                                            {ngo.phone && <p><strong>Phone:</strong> {ngo.phone}</p>}
+                                            {ngo.location?.city && (
+                                                <p><strong>Location:</strong> {ngo.location.city}{ngo.location.state ? `, ${ngo.location.state}` : ''}</p>
+                                            )}
+                                            {ngo.address?.street && (
+                                                <p><strong>Address:</strong> {ngo.address.street}</p>
+                                            )}
+                                        </div>
+                                        <button className="primary" onClick={(e) => { e.stopPropagation(); setSelectedNGO(ngo); }}>
+                                            Select to Donate
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                        ))
+                        ) : (
+                            <div className="donation-form-section">
+                                <button style={{ marginBottom: '16px' }} onClick={() => setSelectedNGO(null)}>← Back to NGO List</button>
+                                <div className="card" style={{ padding: '24px' }}>
+                                    <h3>Donating to: {selectedNGO.name}</h3>
+                                    <p style={{ color: 'rgba(232, 237, 242, 0.7)', marginBottom: '24px' }}>
+                                        Fill out the donation form below to directly donate to this verified NGO.
+                                    </p>
+                                    <div className="inline-form">
+                                        <div className="row">
+                                            <label>Item Name *</label>
+                                            <input
+                                                placeholder="Item name"
+                                                value={directDonationForm.itemName}
+                                                onChange={(e) => setDirectDonationForm({ ...directDonationForm, itemName: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="row">
+                                            <label>Food Type</label>
+                                            <select
+                                                value={directDonationForm.foodType}
+                                                onChange={(e) => setDirectDonationForm({ ...directDonationForm, foodType: e.target.value })}
+                                            >
+                                                <option value="veg">Vegetarian</option>
+                                                <option value="nonveg">Non-Vegetarian</option>
+                                            </select>
+                                            {directDonationForm.foodType === "veg" ? (
+                                                <select
+                                                    value={directDonationForm.category}
+                                                    onChange={(e) => setDirectDonationForm({ ...directDonationForm, category: e.target.value })}
+                                                >
+                                                    <option>Fruits</option>
+                                                    <option>Vegetables</option>
+                                                    <option>Dairy</option>
+                                                    <option>Grains</option>
+                                                </select>
+                                            ) : (
+                                                <select
+                                                    value={directDonationForm.category}
+                                                    onChange={(e) => setDirectDonationForm({ ...directDonationForm, category: e.target.value })}
+                                                >
+                                                    <option>Meat</option>
+                                                    <option>Fish</option>
+                                                    <option>Eggs</option>
+                                                </select>
+                                            )}
+                                        </div>
+                                        <div className="row">
+                                            <label>Quantity *</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                placeholder="Quantity"
+                                                value={directDonationForm.quantity}
+                                                onChange={(e) => setDirectDonationForm({ ...directDonationForm, quantity: e.target.value })}
+                                                style={{ width: '120px' }}
+                                            />
+                                            <select
+                                                value={directDonationForm.quantityUnit}
+                                                onChange={(e) => setDirectDonationForm({ ...directDonationForm, quantityUnit: e.target.value })}
+                                            >
+                                                <option>units</option>
+                                                <option>kg</option>
+                                                <option>g</option>
+                                                <option>dozens</option>
+                                                <option>litre</option>
+                                                <option>ml</option>
+                                            </select>
+                                        </div>
+                                        <div className="row">
+                                            <label>Expiry Date *</label>
+                                            <input
+                                                type="date"
+                                                value={directDonationForm.expiry}
+                                                onChange={(e) => setDirectDonationForm({ ...directDonationForm, expiry: e.target.value })}
+                                                min={new Date().toISOString().split("T")[0]}
+                                                style={{ width: '200px' }}
+                                            />
+                                        </div>
+                                        <div className="row">
+                                            <label>Notes (Optional)</label>
+                                            <textarea
+                                                placeholder="Any additional notes for the NGO"
+                                                value={directDonationForm.notes}
+                                                onChange={(e) => setDirectDonationForm({ ...directDonationForm, notes: e.target.value })}
+                                                rows="3"
+                                                style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(255, 255, 255, 0.05)', color: 'rgba(232, 237, 242, 0.9)' }}
+                                            />
+                                        </div>
+                                        <div style={{ marginTop: '20px' }}>
+                                            <button
+                                                className="primary"
+                                                onClick={async () => {
+                                                    if (!directDonationForm.itemName || !directDonationForm.expiry) {
+                                                        setBanner({ type: 'warning', text: 'Please fill all required fields' });
+                                                        setTimeout(() => setBanner(null), 3000);
+                                                        return;
+                                                    }
+                                                    try {
+                                                        setBanner({ type: 'info', text: 'Processing donation...' });
+                                                        const token = localStorage.getItem('authToken');
+                                                        if (!token) {
+                                                            setBanner({ type: 'error', text: 'Authentication required' });
+                                                            return;
+                                                        }
+                                                        // Create a donation product that's linked to the NGO
+                                                        const productData = {
+                                                            name: directDonationForm.itemName,
+                                                            image: "https://via.placeholder.com/300x200?text=Donation",
+                                                            type: 'donate',
+                                                            foodType: directDonationForm.foodType,
+                                                            category: directDonationForm.category,
+                                                            quantity: parseInt(directDonationForm.quantity),
+                                                            quantityUnit: directDonationForm.quantityUnit,
+                                                            originalPrice: 0,
+                                                            price: 0,
+                                                            expiry: directDonationForm.expiry,
+                                                            status: "Active",
+                                                            seller: selectedNGO._id, // Link to NGO
+                                                            notes: directDonationForm.notes
+                                                        };
+                                                        const response = await api.products.create(productData, token);
+                                                        if (response.success) {
+                                                            setBanner({ type: 'success', text: `Donation to ${selectedNGO.name} created successfully!` });
+                                                            setDirectDonationForm({
+                                                                itemName: '',
+                                                                quantity: 1,
+                                                                quantityUnit: 'units',
+                                                                category: 'Fruits',
+                                                                foodType: 'veg',
+                                                                expiry: '',
+                                                                notes: ''
+                                                            });
+                                                            setSelectedNGO(null);
+                                                        } else {
+                                                            setBanner({ type: 'error', text: 'Failed to create donation' });
+                                                        }
+                                                    } catch (error) {
+                                                        setBanner({ type: 'error', text: 'Error: ' + error.message });
+                                                    } finally {
+                                                        setTimeout(() => setBanner(null), 3000);
+                                                    }
+                                                }}
+                                            >
+                                                Submit Donation
+                                            </button>
+                                            <button style={{ marginLeft: '8px' }} onClick={() => setSelectedNGO(null)}>Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}

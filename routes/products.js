@@ -1,6 +1,8 @@
 import express from 'express';
 import Product from '../models/Product.js';
 import { updateAllProductPrices, updatePricesForExpiringProducts, getProductPricing } from '../utils/priceUpdater.js';
+import { filterProductsByLocation, sortProductsByDistance, calculateDistance } from '../utils/locationUtils.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -16,7 +18,9 @@ router.get('/', async (req, res) => {
       condition,
       search,
       sortBy = 'createdAt',
-      sortOrder = 'desc'
+      sortOrder = 'desc',
+      useLocation = 'true', // Enable location filtering by default
+      maxRadius = 50 // Maximum serviceability radius in kilometers
     } = req.query;
 
     // Build filter object
@@ -37,19 +41,66 @@ router.get('/', async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    // Calculate pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Get user location if token is provided and location filtering is enabled
+    let userLocation = null;
+    if (useLocation === 'true') {
+      try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (token) {
+          const jwt = await import('jsonwebtoken');
+          const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+          const decoded = jwt.default.verify(token, jwtSecret);
+          const user = await User.findById(decoded.userId);
+          if (user?.location?.latitude && user?.location?.longitude) {
+            userLocation = {
+              latitude: user.location.latitude,
+              longitude: user.location.longitude
+            };
+          }
+        }
+      } catch (authError) {
+        // If auth fails, continue without location filtering
+        console.log('Location filtering skipped:', authError.message);
+      }
+    }
 
-    // Execute query
-    const products = await Product.find(filter)
+    // Execute query (fetch more initially if location filtering will be applied)
+    const fetchLimit = userLocation ? parseInt(limit) * 3 : parseInt(limit);
+    let products = await Product.find(filter)
       .populate('seller', 'username profile.firstName profile.lastName')
       .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit));
+      .limit(fetchLimit);
 
-    const total = await Product.countDocuments(filter);
-    
-    // pagination info returned in response
+    // Apply location-based filtering if user location is available
+    if (userLocation && useLocation === 'true') {
+      products = filterProductsByLocation(products, userLocation, parseFloat(maxRadius));
+      
+      // Sort by distance if location is available
+      products = sortProductsByDistance(products, userLocation);
+    }
+
+    // Calculate pagination after location filtering
+    const total = products.length;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    products = products.slice(skip, skip + parseInt(limit));
+
+    // Add distance information to products if location is available
+    if (userLocation) {
+      products = products.map(product => {
+        const distance = product.location?.latitude && product.location?.longitude
+          ? calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              product.location.latitude,
+              product.location.longitude
+            )
+          : null;
+        return {
+          ...product.toObject(),
+          distance: distance ? parseFloat(distance.toFixed(2)) : null
+        };
+      });
+    }
 
     res.json({
       success: true,
@@ -61,7 +112,12 @@ router.get('/', async (req, res) => {
           totalProducts: total,
           hasNext: skip + products.length < total,
           hasPrev: parseInt(page) > 1
-        }
+        },
+        location: userLocation ? {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          maxRadius: parseFloat(maxRadius)
+        } : null
       }
     });
   } catch (error) {
@@ -105,6 +161,50 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Get current user's active donation listings
+router.get('/my-donations/list', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    const jwt = await import('jsonwebtoken');
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+    const decoded = jwt.default.verify(token, jwtSecret);
+
+    // Compute today's date string (YYYY-MM-DD) to filter out expired donations
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().slice(0, 10);
+
+    const products = await Product.find({
+      type: 'donate',
+      uploader: decoded.userId,
+      status: 'Active',
+      expiry: { $gte: todayStr }
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: {
+        products
+      }
+    });
+  } catch (error) {
+    console.error('Get my donations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 // Create product (protected route)
 router.post('/', async (req, res) => {
   try {
@@ -136,11 +236,52 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Complete your profile to create products or donations' });
     }
     
+    // For direct donations to NGO, allow seller to be the NGO ID from request
+    // Otherwise, use the current user as seller
+    let sellerId = decoded.userId;
+    if (isDonation && req.body.seller && req.body.seller !== decoded.userId.toString()) {
+      // Verify the seller ID is a valid NGO
+      const ngoSeller = await User.findById(req.body.seller);
+      if (ngoSeller && ngoSeller.role === 'ngo' && ngoSeller.profile?.verified) {
+        sellerId = req.body.seller; // Use NGO as seller
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid NGO ID or NGO is not verified'
+        });
+      }
+    }
+    
+    // Get seller's location if available (use the actual seller's location)
+    const actualSeller = sellerId === decoded.userId ? user : await User.findById(sellerId);
+    const sellerLocation = actualSeller?.location || {};
+    
     const productData = {
       ...req.body,
-      seller: decoded.userId,
-      uploader: decoded.userId
+      seller: sellerId,
+      uploader: decoded.userId // Always use current user as uploader
     };
+
+    // If product doesn't have location but seller does, use seller's location
+    if (!productData.location?.latitude && sellerLocation.latitude) {
+      productData.location = {
+        latitude: sellerLocation.latitude,
+        longitude: sellerLocation.longitude,
+        address: productData.location?.address || sellerLocation.address || '',
+        city: productData.location?.city || sellerLocation.city || '',
+        state: productData.location?.state || sellerLocation.state || '',
+        country: productData.location?.country || sellerLocation.country || '',
+        zipCode: productData.location?.zipCode || sellerLocation.zipCode || ''
+      };
+    }
+
+    // Set default serviceability radius if not provided
+    if (!productData.serviceability) {
+      productData.serviceability = {
+        radius: 50, // Default 50km radius
+        enabled: true
+      };
+    }
 
     // Normalize status casing to match schema enum
     if (productData.status) {

@@ -13,10 +13,13 @@
     color: #e8edf2;
     line-height: 1.6;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     position: relative;
     overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Animated background gradient */
@@ -53,19 +56,20 @@
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1.25rem 2.5rem;
+    padding: 0.75rem 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 2rem;
+    gap: 0.75rem;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    flex-wrap: wrap;
 }
 
 .profile-header .logo {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
     font-weight: 800;
     background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
     -webkit-background-clip: text;
@@ -74,6 +78,7 @@
     letter-spacing: -0.5px;
     cursor: pointer;
     transition: all 0.3s ease;
+    flex: 0 0 auto;
 }
 
 .profile-header .logo:hover {
@@ -153,7 +158,7 @@
 /* Main Content */
 .profile-main {
     flex: 1;
-    padding: 3rem 2.5rem;
+    padding: 1rem 1rem;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
@@ -163,35 +168,35 @@
 
 .profile-main h1,
 .profile-main h2 {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
     font-weight: 800;
-    letter-spacing: -1px;
+    letter-spacing: -0.5px;
 }
 
 .profile-main h2 {
-    font-size: 2rem;
+    font-size: 1.375rem;
 }
 
 .profile-main h3 {
     color: #e8edf2;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 700;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.625rem;
 }
 
 /* Banner Messages */
 .banner {
-    padding: 1.25rem 1.75rem;
-    margin-bottom: 2rem;
-    border-radius: 16px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
     backdrop-filter: blur(10px);
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.8125rem;
     text-align: center;
     animation: slideInDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -237,24 +242,25 @@
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    padding: 2.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    margin-bottom: 1rem;
 }
 
 /* Profile Info Section */
 .profile-info {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
 }
 
 .info-field {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 2rem;
+    border-radius: 8px;
+    padding: 0.875rem;
     transition: all 0.3s ease;
 }
 
@@ -267,8 +273,8 @@
     display: block;
     color: rgba(255, 255, 255, 0.7);
     font-weight: 600;
-    margin-bottom: 0.75rem;
-    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8125rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -277,20 +283,21 @@
 .info-field textarea,
 .info-field select {
     width: 100%;
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 0.75rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
+    border-radius: 8px;
     color: #e8edf2;
-    font-size: 1rem;
+    font-size: 0.8125rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     outline: none;
     font-family: inherit;
+    box-sizing: border-box;
 }
 
 .info-field textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 80px;
 }
 
 .info-field input:focus,
@@ -309,17 +316,17 @@
 .info-field button,
 button.primary,
 button.secondary {
-    margin-top: 1rem;
-    padding: 0.875rem 2rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: #fff;
     border: none;
-    border-radius: 12px;
-    font-size: 0.95rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .info-field button:hover,
@@ -366,30 +373,34 @@ button.secondary:hover {
 /* Inline Form */
 .inline-form {
     background: rgba(255, 255, 255, 0.02);
-    padding: 2rem;
-    border-radius: 16px;
+    padding: 1rem;
+    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .inline-form .row {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .inline-form input,
 .inline-form select,
 .inline-form textarea {
-    padding: 0.75rem 1.25rem;
+    padding: 0.5rem 0.75rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    border-radius: 8px;
     color: #e8edf2;
-    font-size: 0.95rem;
+    font-size: 0.8125rem;
     transition: all 0.3s ease;
     outline: none;
+    box-sizing: border-box;
+    flex: 1;
+    min-width: 120px;
 }
 
 .inline-form input:focus,
@@ -409,33 +420,34 @@ button.secondary:hover {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    padding: 2.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .cart-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem;
+    padding: 0.625rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
-    margin-bottom: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    gap: 1rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .cart-item:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(16, 185, 129, 0.3);
-    transform: translateX(8px);
+    transform: translateX(4px);
 }
 
 .cart-item span {
     color: #e8edf2;
-    font-size: 1rem;
+    font-size: 0.8125rem;
 }
 
 .cart-item span:first-child {
@@ -450,16 +462,17 @@ button.secondary:hover {
 }
 
 .remove-button {
-    padding: 0.625rem 1.25rem;
+    padding: 0.375rem 0.75rem;
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #fff;
     border: none;
-    border-radius: 10px;
-    font-size: 0.875rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    white-space: nowrap;
 }
 
 .remove-button:hover {
@@ -468,31 +481,31 @@ button.secondary:hover {
 }
 
 .cart-total {
-    padding: 2rem 1.5rem 1rem;
+    padding: 0.75rem 0.5rem 0.5rem;
     border-top: 2px solid rgba(255, 255, 255, 0.1);
-    margin-top: 1.5rem;
+    margin-top: 0.75rem;
     text-align: right;
 }
 
 .cart-total strong {
     color: #10b981;
-    font-size: 1.5rem;
+    font-size: 1.125rem;
     font-weight: 700;
 }
 
 .checkout-button {
     width: 100%;
-    padding: 1.25rem;
+    padding: 0.625rem;
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: #fff;
     border: none;
-    border-radius: 14px;
-    font-size: 1.1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
-    margin-top: 1.5rem;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    margin-top: 0.75rem;
 }
 
 .checkout-button:hover {
@@ -504,8 +517,8 @@ button.secondary:hover {
 .orders-list,
 .donations-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
 }
 
 .order-item,
@@ -513,10 +526,10 @@ button.secondary:hover {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 2rem;
+    border-radius: 12px;
+    padding: 0.875rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .order-item:hover,
@@ -528,18 +541,18 @@ button.secondary:hover {
 
 .order-item h3,
 .donation-item h3 {
-    font-size: 1.25rem;
-    margin-bottom: 1.25rem;
-    padding-bottom: 1rem;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .order-item p,
 .donation-item p {
-    margin: 0.75rem 0;
+    margin: 0.375rem 0;
     color: rgba(255, 255, 255, 0.7);
-    font-size: 0.95rem;
-    line-height: 1.6;
+    font-size: 0.75rem;
+    line-height: 1.5;
 }
 
 .order-item p strong,
@@ -557,14 +570,16 @@ button.secondary:hover {
 .wishlist-item,
 .notification-item {
     background: rgba(255, 255, 255, 0.05);
-    padding: 1.25rem 1.5rem;
-    border-radius: 14px;
+    padding: 0.75rem;
+    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     transition: all 0.3s ease;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
 }
 
 .wishlist-item:hover,
@@ -584,33 +599,290 @@ button.secondary:hover {
 }
 
 /* History Section */
-.history-section p {
-    font-size: 1.1rem;
-    color: rgba(255, 255, 255, 0.8);
-    margin: 1rem 0;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
+.history-section {
+    padding: 0.75rem 0;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
+.history-section p {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0.5rem 0;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
 
-    .orders-list,
-    .donations-list {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+.history-section p strong {
+    color: #10b981;
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+/* Empty State Messages */
+.profile-section p:only-child,
+.orders-section p:only-child,
+.donations-section p:only-child,
+.wishlist-section p:only-child,
+.notifications-section p:only-child,
+.cart-section p:only-child {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 2rem 1rem;
+    font-size: 0.875rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* Button Groups */
+.donations-section > div:first-of-type {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.donations-section > div:first-of-type > div {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* File Input Styling */
+input[type="file"] {
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+input[type="file"]:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+input[type="file"]::-webkit-file-upload-button {
+    padding: 0.375rem 0.75rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+input[type="file"]::-webkit-file-upload-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Image Preview */
+img[alt="preview"] {
+    width: 180px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 0.75rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Label in Row */
+.inline-form .row label {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+/* Secondary Button */
+button.secondary,
+button[class=""]:not(.primary):not(.danger):not(.logout-btn):not(.remove-button):not(.checkout-button) {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 0.5rem;
+}
+
+button.secondary:hover,
+button[class=""]:not(.primary):not(.danger):not(.logout-btn):not(.remove-button):not(.checkout-button):hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Banner Error Type */
+.banner.error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+    border-left: 4px solid #ef4444;
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Section Styles */
+.profile-section,
+.orders-section,
+.donations-section,
+.wishlist-section,
+.notifications-section,
+.history-section,
+.donate-to-ngo-section,
+.donation-form-section {
+    margin-bottom: 1.5rem;
+}
+
+.profile-section h1,
+.orders-section h2,
+.donations-section h2,
+.wishlist-section h2,
+.notifications-section h2,
+.history-section h2,
+.donate-to-ngo-section h2,
+.donation-form-section h2 {
+    margin-bottom: 1rem;
+}
+
+.donate-to-ngo-section {
+    padding: 1rem;
+}
+
+.donation-form-section {
+    padding: 0.75rem 0;
+}
+
+.donation-form-section button {
+    margin-bottom: 0.75rem;
+}
+
+/* Product Card Enhancements */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.product-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.875rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.product-card:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.product-card.border {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.product-header h4 {
+    font-size: 1rem;
+    color: #e8edf2;
+    margin: 0;
+    font-weight: 700;
+}
+
+.product-details {
+    margin-bottom: 0.75rem;
+}
+
+.product-details p {
+    margin: 0.375rem 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+.product-details p strong {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+.type-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.type-badge.sell {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+
+.type-badge.donate {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+}
+
+.product-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.product-actions button {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
+}
+
+/* Responsive Design - Mobile First */
+/* Checkout / two-column layout: stack on small screens */
+@media (max-width: 900px) {
+    .profile-main .orders-list {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .profile-header {
         flex-wrap: wrap;
-        padding: 1rem 1.5rem;
-        gap: 1rem;
+        padding: 0.625rem 0.75rem;
+        gap: 0.5rem;
     }
 
     .profile-header .logo {
-        font-size: 1.5rem;
+        font-size: 1.125rem;
+        flex: 0 0 auto;
     }
 
     .profile-tabs {
@@ -619,15 +891,12 @@ button.secondary:hover {
         overflow-x: auto;
         justify-content: flex-start;
         scrollbar-width: thin;
-        scrollbar-color: rgba(16, 185, 129, 0.3) transparent;
+        padding: 0.5rem 0;
+        gap: 0.375rem;
     }
 
     .profile-tabs::-webkit-scrollbar {
         height: 4px;
-    }
-
-    .profile-tabs::-webkit-scrollbar-track {
-        background: transparent;
     }
 
     .profile-tabs::-webkit-scrollbar-thumb {
@@ -636,94 +905,306 @@ button.secondary:hover {
     }
 
     .profile-tabs button {
-        padding: 0.625rem 1.25rem;
-        font-size: 0.875rem;
+        padding: 0.35rem 0.625rem;
+        font-size: 0.75rem;
+        flex-shrink: 0;
     }
 
     .profile-actions {
         margin-left: auto;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+    }
+
+    .profile-actions .greeting {
+        font-size: 0.75rem;
     }
 
     .logout-btn {
-        padding: 0.625rem 1.5rem;
-        font-size: 0.875rem;
+        padding: 0.35rem 0.625rem;
+        font-size: 0.75rem;
     }
 
     .profile-main {
-        padding: 2rem 1.5rem;
+        padding: 0.75rem 0.5rem;
     }
 
     .profile-main h1 {
-        font-size: 2rem;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
     }
 
     .profile-main h2 {
-        font-size: 1.75rem;
+        font-size: 1.125rem;
+        margin-bottom: 0.875rem;
+    }
+
+    .profile-main h3 {
+        font-size: 1rem;
+    }
+
+    .banner {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .card {
+        padding: 0.75rem;
+        border-radius: 8px;
     }
 
     .info-field {
-        padding: 1.5rem;
+        padding: 0.75rem;
+        border-radius: 8px;
     }
 
-    .cart-items {
-        padding: 1.75rem;
+    .info-field label {
+        font-size: 0.75rem;
+        margin-bottom: 0.375rem;
     }
 
-    .cart-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
+    .info-field input,
+    .info-field textarea,
+    .info-field select {
+        padding: 0.4rem 0.625rem;
+        font-size: 0.75rem;
+        border-radius: 6px;
     }
 
-    .cart-item span:nth-child(2) {
-        text-align: left;
+    .info-field textarea {
+        min-height: 60px;
     }
 
-    .orders-list,
-    .donations-list {
-        grid-template-columns: 1fr;
+    .inline-form {
+        padding: 0.75rem;
+        border-radius: 8px;
     }
 
     .inline-form .row {
         flex-direction: column;
         align-items: stretch;
-    }
-}
-
-@media (max-width: 480px) {
-    .profile-header {
-        padding: 1rem;
+        gap: 0.5rem;
+        margin-bottom: 0.625rem;
     }
 
-    .profile-header .logo {
-        font-size: 1.25rem;
-    }
-
-    .profile-main {
-        padding: 1.5rem 1rem;
-    }
-
-    .profile-main h1 {
-        font-size: 1.75rem;
-    }
-
-    .profile-main h2 {
-        font-size: 1.5rem;
-    }
-
-    .info-field,
-    .card {
-        padding: 1.25rem;
-        border-radius: 16px;
+    .inline-form input,
+    .inline-form select,
+    .inline-form textarea {
+        padding: 0.4rem 0.625rem;
+        font-size: 0.75rem;
+        width: 100%;
+        min-width: unset;
     }
 
     .cart-items {
-        padding: 1.5rem;
-        border-radius: 20px;
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .cart-item {
+        padding: 0.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .cart-item span {
+        font-size: 0.75rem;
+    }
+
+    .cart-item span:nth-child(2) {
+        text-align: left;
+        min-width: unset;
+    }
+
+    .cart-total {
+        padding: 0.5rem 0.25rem 0.375rem;
+        margin-top: 0.5rem;
+    }
+
+    .cart-total strong {
+        font-size: 1rem;
+    }
+
+    .checkout-button {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .orders-list,
+    .donations-list {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
     }
 
     .order-item,
     .donation-item {
-        padding: 1.5rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .order-item h3,
+    .donation-item h3 {
+        font-size: 0.9375rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .order-item p,
+    .donation-item p {
+        font-size: 0.6875rem;
+        margin: 0.25rem 0;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .wishlist-item,
+    .notification-item {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .history-section p {
+        font-size: 0.75rem;
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-page {
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .profile-header {
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+
+    .profile-main {
+        padding-left: max(0.5rem, env(safe-area-inset-left));
+        padding-right: max(0.5rem, env(safe-area-inset-right));
+    }
+
+    .profile-main h1 {
+        font-size: 1.125rem;
+    }
+
+    .profile-main h2 {
+        font-size: 1rem;
+    }
+
+    .card {
+        padding: 0.625rem;
+    }
+
+    .inline-form .row {
+        margin-bottom: 0.5rem;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .profile-header .logo {
+        font-size: 1rem;
+    }
+
+    .profile-tabs button {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.6875rem;
+    }
+
+    .logout-btn {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.6875rem;
+    }
+
+    .profile-main h1 {
+        font-size: 1rem;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+    .profile-header {
+        padding: 0.625rem 0.875rem;
+    }
+
+    .profile-header .logo {
+        font-size: 1.125rem;
+    }
+
+    .profile-tabs button {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .profile-main {
+        padding: 0.875rem 0.75rem;
+    }
+
+    .profile-main h1 {
+        font-size: 1.375rem;
+    }
+
+    .profile-main h2 {
+        font-size: 1.25rem;
+    }
+
+    .card {
+        padding: 0.875rem;
+    }
+
+    .orders-list,
+    .donations-list {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.875rem;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.875rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .profile-header {
+        padding: 0.625rem 1rem;
+    }
+
+    .orders-list,
+    .donations-list {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+}
+
+@media (min-width: 1025px) {
+    .profile-header {
+        padding: 0.75rem 1.25rem;
+    }
+
+    .profile-main {
+        padding: 1rem 1.25rem;
+    }
+
+    .orders-list,
+    .donations-list {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
 }

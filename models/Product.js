@@ -114,9 +114,33 @@ const productSchema = new mongoose.Schema({
     sustainabilityNotes: String
   },
   location: {
+    latitude: {
+      type: Number,
+      min: -90,
+      max: 90
+    },
+    longitude: {
+      type: Number,
+      min: -180,
+      max: 180
+    },
+    address: String,
     city: String,
     state: String,
-    country: String
+    country: String,
+    zipCode: String
+  },
+  serviceability: {
+    radius: {
+      type: Number,
+      default: 50, // Default radius in kilometers
+      min: 1,
+      max: 500
+    },
+    enabled: {
+      type: Boolean,
+      default: true
+    }
   },
   views: {
     type: Number,
@@ -148,6 +172,9 @@ productSchema.index({ category: 1, price: 1, condition: 1 });
 productSchema.index({ seller: 1, status: 1 });
 productSchema.index({ uploader: 1, createdAt: -1 });
 productSchema.index({ createdAt: -1 });
+// Geospatial index for location-based queries
+productSchema.index({ 'location.latitude': 1, 'location.longitude': 1 });
+productSchema.index({ 'location.city': 1, 'location.state': 1 });
 
 // Method to calculate dynamic pricing based on expiry
 productSchema.methods.calculateDynamicPrice = function() {

@@ -1,0 +1,580 @@
+/* Intro / Landing page — Green Shelf: alignment, animated background, responsive */
+
+.intro-page {
+    font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
+    color: #e8edf2;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ========== Animated background layers ========== */
+.intro-background {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+        radial-gradient(ellipse 120% 70% at 0% 40%, rgba(16, 185, 129, 0.2) 0%, transparent 50%),
+        radial-gradient(ellipse 90% 60% at 100% 70%, rgba(5, 150, 105, 0.18) 0%, transparent 50%),
+        linear-gradient(160deg, #0a0f1a 0%, #0f172a 45%, #0a0f1a 100%);
+    animation: introBgPulse 8s ease-in-out infinite;
+}
+
+.intro-background::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.1) 0%, transparent 15%),
+        radial-gradient(circle at 80% 70%, rgba(5, 150, 105, 0.08) 0%, transparent 18%),
+        radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.06) 0%, transparent 25%);
+    animation: introShimmer 12s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.intro-background::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+        linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: introGridMove 20s linear infinite;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+@keyframes introBgPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.88; }
+}
+
+@keyframes introShimmer {
+    0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    50% { opacity: 0.7; transform: scale(1.05) rotate(1deg); }
+}
+
+@keyframes introGridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(60px, 60px); }
+}
+
+/* Floating blobs — more visible, smoother motion */
+.intro-blob {
+    position: fixed;
+    z-index: 0;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.45;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.intro-blob-1 {
+    width: min(380px, 85vw);
+    height: min(380px, 85vw);
+    background: rgba(16, 185, 129, 0.28);
+    top: 5%;
+    left: 0%;
+    animation: introFloat1 20s ease-in-out infinite;
+}
+
+.intro-blob-2 {
+    width: min(280px, 70vw);
+    height: min(280px, 70vw);
+    background: rgba(5, 150, 105, 0.22);
+    bottom: 10%;
+    right: 0%;
+    animation: introFloat2 24s ease-in-out infinite;
+}
+
+.intro-blob-3 {
+    width: min(220px, 50vw);
+    height: min(220px, 50vw);
+    background: rgba(6, 182, 212, 0.2);
+    top: 45%;
+    left: 35%;
+    animation: introFloat3 18s ease-in-out infinite;
+}
+
+@keyframes introFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(25px, -35px) scale(1.06); }
+    50% { transform: translate(-15px, 15px) scale(0.96); }
+    75% { transform: translate(20px, 25px) scale(1.03); }
+}
+
+@keyframes introFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-35px, 25px) scale(1.08); }
+    50% { transform: translate(20px, -20px) scale(0.95); }
+    75% { transform: translate(-20px, -15px) scale(1.04); }
+}
+
+@keyframes introFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-25px, -25px) scale(1.12); }
+    66% { transform: translate(20px, 15px) scale(0.94); }
+}
+
+/* Small orbs — more of them, scattered */
+.intro-orb {
+    position: fixed;
+    z-index: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.65);
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.5);
+    animation: introOrbPulse 2.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.intro-orb-1 { top: 22%; right: 28%; animation-delay: 0s; }
+.intro-orb-2 { bottom: 28%; left: 22%; animation-delay: 1.2s; }
+.intro-orb-3 { top: 70%; right: 15%; animation-delay: 0.8s; width: 6px; height: 6px; }
+.intro-orb-4 { top: 15%; left: 50%; animation-delay: 2s; width: 6px; height: 6px; }
+
+@keyframes introOrbPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+}
+
+/* Subtle animated glow lines in background */
+.intro-glow-line {
+    position: fixed;
+    z-index: 0;
+    height: 1px;
+    width: 40%;
+    max-width: 400px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(16, 185, 129, 0.25),
+        transparent
+    );
+    pointer-events: none;
+    animation: introGlowLine 8s ease-in-out infinite;
+}
+
+.intro-glow-line-1 {
+    top: 35%;
+    left: 0;
+    transform-origin: left center;
+    animation: introGlowLine 10s ease-in-out infinite;
+}
+
+.intro-glow-line-2 {
+    bottom: 25%;
+    right: 0;
+    width: 35%;
+    background: linear-gradient(
+        270deg,
+        transparent,
+        rgba(5, 150, 105, 0.2),
+        transparent
+    );
+    transform-origin: right center;
+    animation: introGlowLine 9s ease-in-out infinite 1s;
+}
+
+@keyframes introGlowLine {
+    0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
+    50% { opacity: 0.7; transform: scaleX(1); }
+}
+
+/* ========== Layout — alignment fix ========== */
+/* Desktop: 2 columns — col1 = title+tagline (row1), pills+desc+button (row2); col2 = image (spans both rows) */
+.intro-layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr minmax(300px, 46%);
+    grid-template-rows: auto auto;
+    align-items: center;
+    justify-items: stretch;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 3rem);
+    min-height: min(100vh, 100dvh);
+    box-sizing: border-box;
+}
+
+.intro-layout > .intro-content-top {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    align-self: end;
+}
+
+.intro-layout > .intro-image-wrap {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    justify-self: end;
+    align-self: center;
+}
+
+.intro-layout > .intro-content-bottom {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    align-self: start;
+}
+
+/* Responsive: 1 column — title+tagline above image, rest below */
+@media (max-width: 900px) {
+    .intro-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 1.75rem;
+        padding: 1.25rem 1rem;
+        justify-items: center;
+        align-items: center;
+    }
+
+    .intro-layout > .intro-content-top {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: center;
+        align-self: center;
+        text-align: center;
+    }
+
+    .intro-layout > .intro-image-wrap {
+        grid-column: 1;
+        grid-row: 2;
+        justify-self: center;
+        align-self: center;
+    }
+
+    .intro-layout > .intro-content-bottom {
+        grid-column: 1;
+        grid-row: 3;
+        justify-self: center;
+        align-self: center;
+        text-align: center;
+    }
+}
+
+.intro-content-top,
+.intro-content-bottom {
+    max-width: 520px;
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .intro-content-top,
+    .intro-content-bottom {
+        max-width: 100%;
+    }
+}
+
+/* Staggered entrance animations */
+.intro-anim-1 { animation: introFadeUp 0.65s ease-out both; }
+.intro-anim-2 { animation: introFadeUp 0.65s ease-out 0.1s both; }
+.intro-anim-3 { animation: introFadeUp 0.65s ease-out 0.2s both; }
+.intro-anim-4 { animation: introFadeUp 0.65s ease-out 0.3s both; }
+.intro-anim-5 { animation: introFadeUp 0.65s ease-out 0.4s both; }
+
+@keyframes introFadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Feature pills — alignment follows parent */
+.intro-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 1.25rem;
+}
+
+@media (max-width: 900px) {
+    .intro-features {
+        justify-content: center;
+    }
+}
+
+.intro-feature-pill {
+    display: inline-block;
+    padding: 0.4rem 0.85rem;
+    font-size: clamp(0.75rem, 2vw, 0.8rem);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    background: rgba(16, 185, 129, 0.22);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    animation: introPillFloat 4s ease-in-out infinite;
+}
+
+.intro-feature-pill:nth-child(odd) {
+    animation-delay: 0.4s;
+}
+
+@keyframes introPillFloat {
+    0%, 100% { transform: translateY(0); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }
+    50% { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25); }
+}
+
+/* Title — alignment via flex */
+.intro-title {
+    margin: 0 0 0.75rem;
+    font-size: clamp(2rem, 5vw + 0.5rem, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15em;
+}
+
+@media (max-width: 900px) {
+    .intro-title {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .intro-title {
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+    }
+}
+
+.intro-title-green {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 40%, #059669 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.25));
+    animation: introTitleGlow 5s ease-in-out infinite;
+}
+
+@keyframes introTitleGlow {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.25)); }
+    50% { filter: drop-shadow(0 0 28px rgba(16, 185, 129, 0.4)); }
+}
+
+.intro-title-shelf {
+    color: #e8edf2;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.06);
+}
+
+.intro-tagline {
+    margin: 0 0 0.5rem;
+    font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+}
+
+.intro-description {
+    margin: 0 0 1.5rem;
+    font-size: clamp(0.875rem, 1.4vw, 1rem);
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+/* CTA button — touch-friendly on small screens */
+.intro-enter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0.85rem 1.75rem;
+    font-size: clamp(0.95rem, 2vw, 1rem);
+    font-weight: 700;
+    font-family: inherit;
+    color: #fff;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow:
+        0 4px 20px rgba(16, 185, 129, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+    animation: introBtnGlow 3s ease-in-out infinite;
+}
+
+.intro-enter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 8px 28px rgba(16, 185, 129, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    animation: none;
+}
+
+.intro-enter-btn:active {
+    transform: translateY(0);
+}
+
+.intro-enter-btn:focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 3px;
+}
+
+@keyframes introBtnGlow {
+    0%, 100% { box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15); }
+    50% { box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15); }
+}
+
+/* Right: hero carousel — alignment and sizing */
+.intro-image-wrap {
+    position: relative;
+    border-radius: clamp(12px, 2.5vw, 20px);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    width: 100%;
+    max-width: 560px;
+    max-height: min(75vh, 420px);
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.06);
+    animation: introImageIn 0.9s ease-out 0.15s both;
+}
+
+@media (max-width: 900px) {
+    .intro-image-wrap {
+        max-width: 100%;
+        aspect-ratio: 16/10;
+        max-height: none;
+    }
+}
+
+@keyframes introImageIn {
+    from { opacity: 0; transform: translateX(20px) scale(0.98); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.intro-carousel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.intro-hero-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+.intro-hero-image.intro-hero-active {
+    opacity: 1;
+    z-index: 1;
+}
+
+.intro-image-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(
+        135deg,
+        rgba(16, 185, 129, 0.12) 0%,
+        transparent 50%,
+        rgba(5, 150, 105, 0.08) 100%
+    );
+    pointer-events: none;
+}
+
+/* Carousel dots */
+.intro-carousel-dots {
+    position: absolute;
+    bottom: clamp(0.5rem, 2vw, 1rem);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    gap: 0.4rem;
+}
+
+.intro-dot {
+    width: clamp(6px, 1.5vw, 8px);
+    height: clamp(6px, 1.5vw, 8px);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.intro-dot-active {
+    background: rgba(255, 255, 255, 0.95);
+    transform: scale(1.25);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+}
+
+/* ========== Responsive: small phones and safe area ========== */
+@media (max-width: 600px) {
+    .intro-layout {
+        padding: 1rem 0.75rem;
+        gap: 1.5rem;
+    }
+    .intro-features {
+        margin-bottom: 1rem;
+    }
+    .intro-description {
+        margin-bottom: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .intro-page {
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .intro-layout {
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+    .intro-carousel-dots {
+        bottom: 0.6rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .intro-title {
+        font-size: 1.75rem;
+    }
+    .intro-feature-pill {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.7rem;
+    }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .intro-background,
+    .intro-background::before,
+    .intro-background::after,
+    .intro-blob,
+    .intro-orb,
+    .intro-glow-line,
+    .intro-feature-pill,
+    .intro-title-green,
+    .intro-enter-btn {
+        animation: none;
+    }
+    .intro-background::after {
+        opacity: 0.3;
+    }
+    .intro-glow-line {
+        opacity: 0.4;
+    }
+}

@@ -70,11 +70,17 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
                     username = formData.shopName;
                 }
 
+                // Fallback to email local-part and enforce minimum length for backend validation
+                let safeUsername = (username || (formData.email.split("@")[0] || "")).trim();
+                if (safeUsername.length < 3) {
+                    safeUsername = (safeUsername + "000").slice(0, 3);
+                }
+
                 const res = await fetch("http://localhost:5001/api/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        username: formData.email.split('@')[0],
+                        username: safeUsername,
                         email: formData.email,
                         password: formData.password,
                         role: signUpType.toLowerCase()
@@ -87,8 +93,13 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
                     const user = data.data?.user;
                     const token = data.data?.token;
                     onLoginSuccess(user, token);
-                    const role = user.role.toLowerCase();
-                    navigate(`/${role}`);
+                    const role = (user?.role || "").toLowerCase();
+                    if (role === "admin") {
+                        localStorage.setItem("adminToken", token);
+                        navigate("/admin");
+                    } else {
+                        navigate(`/${role}`);
+                    }
                 } else {
                     setError(data.message);
                 }
@@ -108,8 +119,13 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
                     const user = data.data?.user;
                     const token = data.data?.token;
                     onLoginSuccess(user, token);
-                    const role = user.role.toLowerCase();
-                    navigate(`/${role}`);
+                    const role = (user?.role || "").toLowerCase();
+                    if (role === "admin") {
+                        localStorage.setItem("adminToken", token);
+                        navigate("/admin");
+                    } else {
+                        navigate(`/${role}`);
+                    }
                 } else {
                     setError(data.message);
                 }

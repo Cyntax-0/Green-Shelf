@@ -13,10 +13,13 @@
     color: #e8edf2;
     line-height: 1.6;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     position: relative;
     overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Animated background gradient */
@@ -53,18 +56,18 @@
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1.25rem 2.5rem;
+    padding: 0.75rem 1rem;
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 0.75rem;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .homepage-header .logo {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
     font-weight: 800;
     background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
     -webkit-background-clip: text;
@@ -77,10 +80,10 @@
 
 .homepage-header .search-bar {
     flex: 1;
-    padding: 0.875rem 1.75rem;
+    padding: 0.5rem 1rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    font-size: 0.95rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
     background: rgba(255, 255, 255, 0.05);
     color: #e8edf2;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -108,17 +111,17 @@
 }
 
 .homepage-header .auth-button {
-    padding: 0.75rem 2rem;
+    padding: 0.5rem 1rem;
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: #fff;
     border: none;
-    border-radius: 12px;
-    font-size: 0.95rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     position: relative;
     overflow: hidden;
 }
@@ -147,9 +150,9 @@
 .homepage .filter-navbar {
     background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(20px);
-    padding: 1.5rem 2.5rem;
+    padding: 0.75rem 1rem;
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -158,17 +161,18 @@
 }
 
 .homepage .filter-button {
-    padding: 0.625rem 1.5rem;
+    padding: 0.4rem 0.875rem;
     background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    font-size: 0.9rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    white-space: nowrap;
 }
 
 .homepage .filter-button::before {
@@ -200,16 +204,26 @@
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: #fff;
     border-color: #10b981;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.homepage .filter-button select {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    outline: none;
 }
 
 .homepage .filter-location {
-    padding: 0.625rem 1.5rem;
+    padding: 0.4rem 0.875rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    font-size: 0.9rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
     flex: 1;
-    min-width: 200px;
+    min-width: 150px;
     background: rgba(255, 255, 255, 0.05);
     color: #e8edf2;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -226,10 +240,41 @@
     color: rgba(255, 255, 255, 0.4);
 }
 
+.homepage .filter-select {
+    padding: 0.4rem 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    outline: none;
+    font-weight: 500;
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.homepage .filter-select:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.homepage .filter-select:focus {
+    border-color: rgba(16, 185, 129, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.homepage .filter-select option {
+    background: rgba(15, 23, 42, 0.95);
+    color: #e8edf2;
+}
+
 /* Main Content */
 .homepage-main {
     flex: 1;
-    padding: 3rem 2.5rem;
+    padding: 1rem 1rem;
     max-width: 1600px;
     margin: 0 auto;
     width: 100%;
@@ -240,17 +285,19 @@
 .homepage .auth-message {
     background: linear-gradient(135deg, rgba(251, 146, 60, 0.15) 0%, rgba(249, 115, 22, 0.1) 100%);
     border-left: 4px solid #f97316;
-    padding: 1.25rem 1.75rem;
-    margin-bottom: 2.5rem;
-    border-radius: 16px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
     backdrop-filter: blur(10px);
     animation: slideInDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.2);
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.2);
 }
 
 .homepage .auth-message p {
     color: #fdba74;
     font-weight: 500;
+    font-size: 0.8125rem;
+    margin: 0;
 }
 
 @keyframes slideInDown {
@@ -266,15 +313,15 @@
 }
 
 .homepage-main h1 {
-    font-size: 3rem;
+    font-size: 1.5rem;
     background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 3rem;
+    margin-bottom: 1.25rem;
     font-weight: 800;
     text-align: center;
-    letter-spacing: -2px;
+    letter-spacing: -0.5px;
     position: relative;
 }
 
@@ -293,23 +340,23 @@
 /* Product Grid */
 .homepage .product-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-bottom: 4rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .homepage .product-card {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    padding: 1.75rem;
+    border-radius: 12px;
+    padding: 0.875rem;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .homepage .product-card::before {
@@ -338,10 +385,10 @@
 
 .homepage .product-image {
     width: 100%;
-    height: 220px;
+    height: 140px;
     object-fit: cover;
-    border-radius: 16px;
-    margin-bottom: 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 0.625rem;
     background: rgba(255, 255, 255, 0.05);
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -351,32 +398,35 @@
 }
 
 .homepage .product-card h3 {
-    font-size: 1.4rem;
+    font-size: 0.9375rem;
     color: #e8edf2;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     font-weight: 700;
     position: relative;
     z-index: 1;
+    line-height: 1.3;
 }
 
 .homepage .product-card p {
-    margin: 0.5rem 0;
+    margin: 0.25rem 0;
     color: rgba(255, 255, 255, 0.6);
-    font-size: 0.95rem;
+    font-size: 0.75rem;
     position: relative;
     z-index: 1;
+    line-height: 1.4;
 }
 
 .homepage .expiry-warning {
     color: #fca5a5;
     font-weight: 600;
     background: rgba(239, 68, 68, 0.15);
-    padding: 0.625rem;
-    border-radius: 10px;
+    padding: 0.375rem;
+    border-radius: 6px;
     text-align: center;
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
     border: 1px solid rgba(239, 68, 68, 0.3);
     animation: pulse 2s infinite;
+    font-size: 0.6875rem;
 }
 
 @keyframes pulse {
@@ -393,16 +443,16 @@
 
 .homepage .product-card button {
     margin-top: auto;
-    padding: 1rem;
+    padding: 0.5rem 0.75rem;
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: #fff;
     border: none;
-    border-radius: 14px;
-    font-size: 1rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     position: relative;
     z-index: 1;
     overflow: hidden;
@@ -440,38 +490,43 @@
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    padding: 2.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     position: sticky;
-    top: 140px;
+    top: 80px;
+    margin-top: 1rem;
 }
 
 .homepage .cart-section h2 {
-    font-size: 2rem;
+    font-size: 1.125rem;
     color: #e8edf2;
-    margin-bottom: 2rem;
-    padding-bottom: 1.25rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     font-weight: 700;
 }
 
 .homepage .cart-section ul {
     list-style: none;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .homepage .cart-section li {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.25rem;
+    padding: 0.625rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
-    margin-bottom: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: rgba(255, 255, 255, 0.9);
+    font-size: 0.8125rem;
+    gap: 0.5rem;
 }
 
 .homepage .cart-section li:hover {
@@ -481,16 +536,17 @@
 }
 
 .homepage .remove-button {
-    padding: 0.5rem 1.25rem;
+    padding: 0.375rem 0.75rem;
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #fff;
     border: none;
-    border-radius: 10px;
-    font-size: 0.875rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    white-space: nowrap;
 }
 
 .homepage .remove-button:hover {
@@ -500,20 +556,20 @@
 
 .homepage .cart-actions {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
 }
 
 .homepage .cart-actions button {
     flex: 1;
-    padding: 1.125rem;
+    padding: 0.625rem;
     border: none;
-    border-radius: 14px;
-    font-size: 1rem;
+    border-radius: 8px;
+    font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    min-width: 180px;
+    min-width: 120px;
 }
 
 .homepage .cart-actions button:first-child {
@@ -540,13 +596,14 @@
 }
 
 .homepage .cart-message {
-    margin-top: 1.5rem;
-    padding: 1.125rem;
+    margin-top: 0.75rem;
+    padding: 0.625rem;
     background: rgba(16, 185, 129, 0.15);
     color: #6ee7b7;
-    border-radius: 12px;
+    border-radius: 8px;
     text-align: center;
     font-weight: 500;
+    font-size: 0.75rem;
     border: 1px solid rgba(16, 185, 129, 0.3);
     animation: fadeInScale 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -563,110 +620,343 @@
     }
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-    .homepage .product-list {
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 1.5rem;
-    }
+/* Empty State */
+.homepage .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
 }
 
-@media (max-width: 1024px) {
-    .homepage .product-list {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    }
-
-    .homepage .cart-section {
-        position: relative;
-        top: 0;
-    }
+.homepage .empty-state p {
+    margin: 0;
 }
 
-@media (max-width: 768px) {
+/* Responsive Design - Mobile First Approach */
+@media (max-width: 640px) {
     .homepage-header {
         flex-wrap: wrap;
-        padding: 1rem 1.5rem;
-        gap: 1rem;
+        padding: 0.625rem 0.75rem;
+        gap: 0.5rem;
     }
 
     .homepage-header .logo {
-        font-size: 1.5rem;
+        font-size: 1.125rem;
+        flex: 0 0 auto;
     }
 
     .homepage-header .search-bar {
         width: 100%;
         order: 3;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
     }
 
     .homepage-header nav {
-        margin-left: auto;
+        display: flex;
+        gap: 0.5rem;
+        flex: 1;
+        justify-content: flex-end;
+    }
+
+    .homepage-header .auth-button {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
     }
 
     .homepage .filter-navbar {
-        padding: 1.25rem 1.5rem;
-        gap: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        gap: 0.375rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .homepage .filter-navbar::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .homepage .filter-navbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
     }
 
     .homepage .filter-button {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
+        padding: 0.35rem 0.625rem;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .homepage .filter-select {
+        padding: 0.35rem 0.625rem;
+        font-size: 0.75rem;
+        min-width: 100px;
+        flex-shrink: 0;
     }
 
     .homepage .filter-location {
         width: 100%;
         min-width: unset;
+        padding: 0.35rem 0.625rem;
+        font-size: 0.75rem;
+        order: 100;
     }
 
     .homepage-main {
-        padding: 2rem 1.5rem;
+        padding: 0.75rem 0.5rem;
     }
 
     .homepage-main h1 {
-        font-size: 2.25rem;
-        letter-spacing: -1px;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
     }
 
     .homepage .product-list {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1.25rem;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.75rem;
     }
 
     .homepage .product-card {
-        padding: 1.25rem;
+        padding: 0.625rem;
+        border-radius: 8px;
+    }
+
+    .homepage .product-image {
+        height: 100px;
+        margin-bottom: 0.5rem;
+    }
+
+    .homepage .product-card h3 {
+        font-size: 0.8125rem;
+        margin-bottom: 0.375rem;
+    }
+
+    .homepage .product-card p {
+        font-size: 0.6875rem;
+        margin: 0.125rem 0;
+    }
+
+    .homepage .product-card button {
+        padding: 0.4rem 0.625rem;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
     }
 
     .homepage .cart-section {
-        padding: 1.75rem;
+        padding: 0.75rem;
+        position: relative;
+        top: 0;
+        margin-top: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .homepage .cart-section h2 {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .homepage .cart-section ul {
+        max-height: 200px;
+        margin-bottom: 0.75rem;
+    }
+
+    .homepage .cart-section li {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        margin-bottom: 0.375rem;
+        flex-wrap: wrap;
+    }
+
+    .homepage .remove-button {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.6875rem;
     }
 
     .homepage .cart-actions {
         flex-direction: column;
+        gap: 0.375rem;
     }
 
     .homepage .cart-actions button {
         width: 100%;
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        min-width: unset;
+    }
+
+    .homepage .cart-message {
+        font-size: 0.6875rem;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
     }
 }
 
-@media (max-width: 480px) {
-    .homepage .product-list {
-        grid-template-columns: 1fr;
-    }
-
-    .homepage-main h1 {
-        font-size: 1.875rem;
+@media (min-width: 641px) and (max-width: 768px) {
+    .homepage-header {
+        padding: 0.625rem 0.875rem;
+        gap: 0.625rem;
     }
 
     .homepage-header .logo {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
+    }
+
+    .homepage-header .search-bar {
+        font-size: 0.8125rem;
+        padding: 0.5rem 0.875rem;
     }
 
     .homepage-header .auth-button {
-        padding: 0.625rem 1.25rem;
-        font-size: 0.875rem;
+        padding: 0.4rem 0.875rem;
+        font-size: 0.75rem;
+    }
+
+    .homepage .filter-navbar {
+        padding: 0.625rem 0.875rem;
+        gap: 0.5rem;
+    }
+
+    .homepage .filter-button {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .homepage .filter-select {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        min-width: 110px;
     }
 
     .homepage-main {
-        padding: 1.5rem 1rem;
+        padding: 0.875rem 0.75rem;
+    }
+
+    .homepage-main h1 {
+        font-size: 1.375rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .homepage .product-list {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.875rem;
+    }
+
+    .homepage .product-image {
+        height: 120px;
+    }
+
+    .homepage .product-card h3 {
+        font-size: 0.875rem;
+    }
+
+    .homepage .product-card p {
+        font-size: 0.6875rem;
+    }
+
+    .homepage .cart-section {
+        top: 70px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .homepage-header {
+        padding: 0.625rem 1rem;
+    }
+
+    .homepage-header .logo {
+        font-size: 1.125rem;
+    }
+
+    .homepage-main {
+        padding: 1rem 0.875rem;
+    }
+
+    .homepage-main h1 {
+        font-size: 1.375rem;
+    }
+
+    .homepage .product-list {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+
+    .homepage .product-image {
+        height: 140px;
+    }
+
+    .homepage .cart-section {
+        top: 70px;
+    }
+}
+
+@media (min-width: 1025px) and (max-width: 1200px) {
+    .homepage .product-list {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 1201px) {
+    .homepage-header {
+        padding: 0.75rem 1.25rem;
+    }
+
+    .homepage-main {
+        padding: 1rem 1.25rem;
+    }
+
+    .homepage .filter-navbar {
+        padding: 0.75rem 1.25rem;
+    }
+}
+
+/* Extra small phones and safe area */
+@media (max-width: 480px) {
+    .homepage-header {
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+
+    .homepage-main {
+        padding-left: max(0.5rem, env(safe-area-inset-left));
+        padding-right: max(0.5rem, env(safe-area-inset-right));
+    }
+
+    .homepage .product-list {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .homepage .product-image {
+        height: 90px;
+    }
+
+    .homepage .product-card h3 {
+        font-size: 0.75rem;
+    }
+
+    .homepage .product-card p {
+        font-size: 0.625rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .homepage-header .logo {
+        font-size: 1rem;
+    }
+
+    .homepage-header .auth-button {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.6875rem;
+    }
+
+    .homepage .filter-button {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.6875rem;
+    }
+
+    .homepage-main h1 {
+        font-size: 1.125rem;
     }
 }

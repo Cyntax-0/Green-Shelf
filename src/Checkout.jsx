@@ -136,7 +136,7 @@ const Checkout = () => {
             localStorage.removeItem('cartStore');
             setShowSuccess(true);
             setTimeout(() => {
-                navigate('/');
+                navigate('/home');
             }, 2000);
         } catch (error) {
             alert('Error placing order. Please try again.');
@@ -165,9 +165,9 @@ const Checkout = () => {
     return (
         <div className="profile-page">
             <header className="profile-header">
-                <div className="logo" onClick={() => navigate('/')}>GreenShelf</div>
+                <div className="logo" onClick={() => navigate('/home')}>GreenShelf</div>
                 <nav className="profile-tabs">
-                    <button onClick={() => navigate('/')}>Continue Shopping</button>
+                    <button onClick={() => navigate('/home')}>Continue Shopping</button>
                 </nav>
             </header>
 
@@ -180,7 +180,7 @@ const Checkout = () => {
                 ) : cartItems.length === 0 ? (
                     <div>
                         <p>Your cart is empty.</p>
-                        <button className="primary" onClick={() => navigate('/')}>Continue Shopping</button>
+                        <button className="primary" onClick={() => navigate('/home')}>Continue Shopping</button>
                     </div>
                 ) : (
                     <div className="orders-list" style={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -252,7 +252,7 @@ const Checkout = () => {
                                 <button className="primary" onClick={handlePlaceOrder} disabled={showSuccess}>
                                     Place Order
                                 </button>
-                                <button onClick={() => navigate('/')} disabled={showSuccess}>
+                                <button onClick={() => navigate('/home')} disabled={showSuccess}>
                                     Cancel
                                 </button>
                             </div>

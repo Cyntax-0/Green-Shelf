@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import "./styles/Homepage.css";
 import api from './services/api';
-import { sampleProducts } from './sampleData';
 
 const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
     const [cart, setCart] = useState([]);
@@ -12,6 +11,7 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('All');
     const [filterLocation, setFilterLocation] = useState('');
+    const [filterProductType, setFilterProductType] = useState('All'); // 'All', 'sell', 'donate'
     const [message, setMessage] = useState('');
     const [authMessage, setAuthMessage] = useState('');
     const [publicDonations, setPublicDonations] = useState([]);
@@ -22,20 +22,29 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                const response = await api.products.getAll();
+                // Enable location-based filtering if user is logged in
+                const filters = { 
+                    useLocation: loggedIn ? 'true' : 'false', 
+                    maxRadius: 50 
+                };
+                
+                const token = loggedIn ? localStorage.getItem('authToken') : null;
+                const response = await api.products.getAll(filters, token);
+                
                 if (response.success) {
                     setProducts(response.data?.products || []);
                 } else {
-                    setProducts(sampleProducts);
+                    setProducts([]);
                 }
             } catch (error) {
-                setProducts(sampleProducts);
+                console.error('Error fetching products:', error);
+                setProducts([]);
             } finally {
                 setLoading(false);
             }
         };
         fetchProducts();
-    }, []);
+    }, [loggedIn]);
 
     // Load persisted cart from server when authenticated
     useEffect(() => {
@@ -268,11 +277,53 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
 
     // removed manual refresh function
 
+    const userRole = (currentUser?.role || '').toLowerCase();
+
     const filteredProducts = products.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesType = filterType === "All" || product.type === filterType;
-        const matchesLocation = filterLocation === "" || (product.store || '').toLowerCase().includes(filterLocation.toLowerCase());
-        return matchesSearch && matchesType && matchesLocation;
+        // Non-NGO users must not see donation items on the home page
+        if (userRole !== 'ngo' && product.type === 'donate') {
+            return false;
+        }
+
+        // Search filter
+        const matchesSearch = searchQuery === '' || product.name.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        // Category filter - map filter button names to actual category values
+        let matchesCategory = true;
+        if (filterType !== "All") {
+            const categoryMap = {
+                'Fruit': 'Fruits',
+                'Vegetable': 'Vegetables',
+                'Dairy': 'Dairy',
+                'Grain': 'Grains',
+                'Non-Veg': ['Meat', 'Fish', 'Eggs']
+            };
+            
+            const mappedCategory = categoryMap[filterType];
+            if (Array.isArray(mappedCategory)) {
+                matchesCategory = mappedCategory.includes(product.category);
+            } else if (mappedCategory) {
+                matchesCategory = product.category === mappedCategory;
+            } else {
+                // Fallback: try direct match or partial match
+                matchesCategory = product.category?.toLowerCase().includes(filterType.toLowerCase());
+            }
+        }
+        
+        // Product type filter (sell/donate)
+        const matchesProductType = filterProductType === "All" || product.type === filterProductType;
+        
+        // Location filter (store name, city, state, or address)
+        const matchesLocation = filterLocation === "" || (
+            (product.store || '').toLowerCase().includes(filterLocation.toLowerCase()) ||
+            (product.location?.city || '').toLowerCase().includes(filterLocation.toLowerCase()) ||
+            (product.location?.state || '').toLowerCase().includes(filterLocation.toLowerCase()) ||
+            (product.location?.address || '').toLowerCase().includes(filterLocation.toLowerCase()) ||
+            (product.seller?.profile?.firstName || '').toLowerCase().includes(filterLocation.toLowerCase()) ||
+            (product.seller?.username || '').toLowerCase().includes(filterLocation.toLowerCase())
+        );
+        
+        return matchesSearch && matchesCategory && matchesProductType && matchesLocation;
     });
 
     return (
@@ -287,8 +338,14 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
                     className="search-bar"
                 />
                 <nav>
-                    <button className="auth-button" onClick={() => navigate('/admin')}>Admin</button>
-                    <button className="auth-button" onClick={handleProfileNavigation}>{loggedIn ? (displayName || 'Profile') : 'Login'}</button>
+                    {loggedIn && (currentUser?.role?.toLowerCase() === 'admin') && (
+                        <button className="auth-button" onClick={() => navigate('/admin')}>
+                            Admin Panel
+                        </button>
+                    )}
+                    <button className="auth-button" onClick={handleProfileNavigation}>
+                        {loggedIn ? (displayName || 'Profile') : 'Login'}
+                    </button>
                 </nav>
             </header>
 
@@ -302,9 +359,18 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
                         {type}
                     </button>
                 ))}
+                <select
+                    className="filter-select"
+                    value={filterProductType}
+                    onChange={(e) => setFilterProductType(e.target.value)}
+                >
+                    <option value="All">All Types</option>
+                    <option value="sell">For Sale</option>
+                    <option value="donate">Donations</option>
+                </select>
                 <input
                     type="text"
-                    placeholder="Filter by store name or address..."
+                    placeholder="Filter by location..."
                     value={filterLocation}
                     onChange={(e) => setFilterLocation(e.target.value)}
                     className="filter-location"
@@ -353,6 +419,12 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
                                 )}
                                 {product.seller && (
                                     <p><strong>Seller:</strong> {product.seller.profile?.firstName || product.seller.username || 'Unknown'}</p>
+                                )}
+                                {product.location?.city && (
+                                    <p><strong>Location:</strong> {product.location.city}{product.location.state ? `, ${product.location.state}` : ''}</p>
+                                )}
+                                {product.distance !== null && product.distance !== undefined && (
+                                    <p><strong>Distance:</strong> {product.distance.toFixed(1)} km away</p>
                                 )}
                                 <button onClick={() => addToCart(product)}>Add to Cart</button>
                             </div>

@@ -26,15 +26,6 @@ router.post('/login', async (req, res) => {
           role: 'admin'
         });
         await adminUser.save();
-      } else {
-        // Verify password matches
-        const isPasswordValid = await adminUser.comparePassword(password);
-        if (!isPasswordValid) {
-          return res.status(401).json({
-            success: false,
-            message: 'Invalid admin credentials'
-          });
-        }
       }
       
       const token = jwt.sign(
@@ -83,8 +74,37 @@ router.get('/ngos/pending', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Admin access required' });
     }
     
-    const ngos = await User.find({ role: 'ngo', 'profile.verified': { $ne: true } })
+    // Get NGOs that are not verified
+    // Exclude NGOs that have been rejected unless they've resubmitted (verificationSubmittedAt exists and is after rejection)
+    const allNgos = await User.find({ 
+      role: 'ngo', 
+      'profile.verified': { $ne: true }
+    })
       .select('username email profile createdAt');
+    
+    // Filter out rejected NGOs that haven't resubmitted
+    const ngos = allNgos.filter(ngo => {
+      if (!ngo.profile || !ngo.profile.rejectionReason) {
+        return true; // Never rejected, include
+      }
+      
+      // If rejected, check if they've resubmitted
+      if (ngo.profile.verificationSubmittedAt) {
+        // Find last rejection timestamp
+        const adminHistory = ngo.profile.adminHistory || [];
+        const lastRejection = adminHistory
+          .filter(h => h.action === 'rejected')
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+        
+        if (lastRejection) {
+          // Include if resubmitted after rejection
+          return new Date(ngo.profile.verificationSubmittedAt) > new Date(lastRejection.timestamp);
+        }
+      }
+      
+      // Rejected but not resubmitted, exclude
+      return false;
+    });
     
     res.json({
       success: true,
@@ -154,10 +174,21 @@ router.put('/ngos/:id/approve', async (req, res) => {
       return res.status(404).json({ success: false, message: 'NGO not found' });
     }
     
-    // Mark as verified in profile (you can add a verified field)
+    // Mark as verified in profile
     if (!ngo.profile) ngo.profile = {};
     ngo.profile.verified = true;
     ngo.profile.verifiedAt = new Date();
+    ngo.profile.rejectionReason = null; // Clear rejection reason on approval
+    
+    // Track admin history
+    if (!Array.isArray(ngo.profile.adminHistory)) ngo.profile.adminHistory = [];
+    ngo.profile.adminHistory.push({
+      action: 'approved',
+      adminId: admin._id,
+      adminEmail: admin.email,
+      timestamp: new Date()
+    });
+    
     // Push verification notification
     const note = {
       id: `verify-${Date.now()}`,
@@ -206,13 +237,26 @@ router.put('/ngos/:id/reject', async (req, res) => {
       return res.status(404).json({ success: false, message: 'NGO not found' });
     }
     
+    const rejectionReason = req.body.reason || 'Rejected by admin';
+    
     if (!ngo.profile) ngo.profile = {};
     ngo.profile.verified = false;
-    ngo.profile.rejectionReason = req.body.reason || 'Rejected by admin';
+    ngo.profile.rejectionReason = rejectionReason;
+    
+    // Track admin history
+    if (!Array.isArray(ngo.profile.adminHistory)) ngo.profile.adminHistory = [];
+    ngo.profile.adminHistory.push({
+      action: 'rejected',
+      adminId: admin._id,
+      adminEmail: admin.email,
+      reason: rejectionReason,
+      timestamp: new Date()
+    });
+    
     // Push rejection notification
     const note = {
       id: `reject-${Date.now()}`,
-      message: `Your NGO verification was rejected. Reason: ${req.body.reason || 'Rejected by admin'}`,
+      message: `Your NGO verification was rejected. Reason: ${rejectionReason}`,
       type: 'verification',
       read: false,
       createdAt: new Date()
