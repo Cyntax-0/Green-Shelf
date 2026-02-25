@@ -8,7 +8,7 @@ A full-stack e-commerce platform connecting customers, sellers, and NGOs for sus
 - **Node.js** (v16 or higher) - [Download here](https://nodejs.org/)
 - **MongoDB Atlas Account** (Free) - [Sign up here](https://www.mongodb.com/atlas)
 
-### 1. Clone and Instal
+### 1. Clone and Install
 ```bash
 # Clone the repository
 git clone <your-repo-url>
