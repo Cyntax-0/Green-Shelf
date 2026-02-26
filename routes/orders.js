@@ -1,4 +1,5 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import Order from '../models/Order.js';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
@@ -17,8 +18,8 @@ router.post('/create', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+    const decoded = jwt.verify(token, jwtSecret);
 
     // Ensure customer has completed profile
     const { default: User } = await import('../models/User.js');
@@ -131,8 +132,8 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+    const decoded = jwt.verify(token, jwtSecret);
 
     const { page = 1, limit = 10, status } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -181,8 +182,8 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+    const decoded = jwt.verify(token, jwtSecret);
 
     const order = await Order.findById(req.params.id)
       .populate('items.product', 'name images')
@@ -229,8 +230,8 @@ router.put('/:id/status', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+    const decoded = jwt.verify(token, jwtSecret);
 
     const { status, trackingNumber, notes } = req.body;
 

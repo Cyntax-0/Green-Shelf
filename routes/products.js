@@ -1,4 +1,5 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import Product from '../models/Product.js';
 import { updateAllProductPrices, updatePricesForExpiringProducts, getProductPricing } from '../utils/priceUpdater.js';
 import { filterProductsByLocation, sortProductsByDistance, calculateDistance } from '../utils/locationUtils.js';
@@ -47,9 +48,8 @@ router.get('/', async (req, res) => {
       try {
         const token = req.headers.authorization?.split(' ')[1];
         if (token) {
-          const jwt = await import('jsonwebtoken');
           const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-          const decoded = jwt.default.verify(token, jwtSecret);
+          const decoded = jwt.verify(token, jwtSecret);
           const user = await User.findById(decoded.userId);
           if (user?.location?.latitude && user?.location?.longitude) {
             userLocation = {
@@ -173,9 +173,8 @@ router.get('/my-donations/list', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
     const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.default.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret);
 
     // Compute today's date string (YYYY-MM-DD) to filter out expired donations
     const today = new Date();
@@ -217,9 +216,8 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
     const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.default.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret);
 
     // Load user and enforce role + profile completeness
     const { default: User } = await import('../models/User.js');
@@ -331,9 +329,8 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
     const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.default.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret);
 
     const product = await Product.findById(req.params.id);
     

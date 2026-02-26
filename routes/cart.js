@@ -1,4 +1,5 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
 
@@ -16,8 +17,13 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.decode(token);
+    if (!decoded?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
 
     let cart = await Cart.findOne({ user: decoded.userId })
       .populate('items.product', 'name price image images expiry category quantity quantityUnit originalPrice type discountType currentDiscount seller');
@@ -53,8 +59,13 @@ router.post('/add', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.decode(token);
+    if (!decoded?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
 
     const { productId, quantity = 1 } = req.body;
 
@@ -64,6 +75,14 @@ router.post('/add', async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Product not found or not available'
+      });
+    }
+
+    // Prevent sellers from adding their own products to the cart
+    if (product.seller && product.seller.toString() === decoded.userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot add your own product to the cart'
       });
     }
 
@@ -93,7 +112,7 @@ router.post('/add', async (req, res) => {
       data: cart
     });
   } catch (error) {
-    console.error('Add to cart error:', error);
+    console.error('Add to cart error:', error?.message, error?.stack);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -114,8 +133,13 @@ router.put('/update', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.decode(token);
+    if (!decoded?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
 
     const { productId, quantity } = req.body;
 
@@ -160,8 +184,13 @@ router.delete('/remove', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.decode(token);
+    if (!decoded?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
 
     const { productId } = req.body;
 
@@ -206,8 +235,13 @@ router.delete('/clear', async (req, res) => {
       });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.decode(token);
+    if (!decoded?.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
 
     let cart = await Cart.findOne({ user: decoded.userId });
     if (!cart) {

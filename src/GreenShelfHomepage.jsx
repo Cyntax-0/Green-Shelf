@@ -149,8 +149,20 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
     const result = getDiscountedPrice;
 
     const addToCart = async (product) => {
-        if ((currentUser?.role || '').toLowerCase() === 'ngo' && !currentUser?.profile?.verified) {
+        const userRole = (currentUser?.role || '').toLowerCase();
+
+        // Prevent unverified NGOs from adding items
+        if (userRole === 'ngo' && !currentUser?.profile?.verified) {
             setMessage('NGO account not verified yet. Please wait for admin approval.');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        // Prevent sellers from adding their own products
+        const productSellerId = product?.seller?._id || product?.seller;
+        const currentUserId = currentUser?._id;
+        if (userRole === 'seller' && currentUserId && productSellerId && String(productSellerId) === String(currentUserId)) {
+            setMessage('You cannot add your own product to the cart.');
             setTimeout(() => setMessage(''), 3000);
             return;
         }
@@ -204,7 +216,8 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
             setMessage(`${product.name} added to cart!`);
             setTimeout(() => setMessage(''), 3000);
         } catch (e) {
-            setMessage('Failed to add to cart.');
+            const errorMsg = e?.message || 'Failed to add to cart.';
+            setMessage(errorMsg);
             setTimeout(() => setMessage(''), 3000);
         }
     };
