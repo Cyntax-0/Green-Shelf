@@ -219,7 +219,7 @@ router.post('/', async (req, res) => {
     const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
     const decoded = jwt.verify(token, jwtSecret);
 
-    // Load user and enforce role + profile completeness
+    // Load user and enforce role
     const { default: User } = await import('../models/User.js');
     const user = await User.findById(decoded.userId);
     if (!user) {
@@ -229,9 +229,6 @@ router.post('/', async (req, res) => {
     const isAllowedRole = (user.role === 'seller') || (user.role === 'ngo') || (user.role === 'customer' && isDonation);
     if (!isAllowedRole) {
       return res.status(403).json({ success: false, message: 'Only sellers/NGOs can create listings; customers may create donations only' });
-    }
-    if (!user.isProfileComplete()) {
-      return res.status(403).json({ success: false, message: 'Complete your profile to create products or donations' });
     }
     
     // For direct donations to NGO, allow seller to be the NGO ID from request

@@ -14,24 +14,30 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Admin credentials check
-    if (email === 'admin@mail.com' && password === '123456') {
+    // Admin credentials check (password kept only in code, not DB)
+    const ADMIN_EMAIL = 'admin@mail.com';
+    const ADMIN_PASSWORD = '123456';
+
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       // Create or get admin user
-      let adminUser = await User.findOne({ email: 'admin@mail.com', role: 'admin' });
+      let adminUser = await User.findOne({ email: ADMIN_EMAIL, role: 'admin' });
       if (!adminUser) {
+        // Store a random password in DB so the real admin password is never persisted
+        const randomPassword = Math.random().toString(36).slice(2) + Date.now().toString(36);
         adminUser = new User({
           username: 'admin',
-          email: 'admin@mail.com',
-          password: '123456',
+          email: ADMIN_EMAIL,
+          password: randomPassword,
           role: 'admin'
         });
         await adminUser.save();
       }
       
+      const jwtExpires = (process.env.JWT_EXPIRES_IN || '15d').trim() || '15d';
       const token = jwt.sign(
         { userId: adminUser._id, role: 'admin' },
         process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development',
-        { expiresIn: '24h' }
+        { expiresIn: jwtExpires }
       );
       
       return res.json({

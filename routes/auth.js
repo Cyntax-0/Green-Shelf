@@ -20,7 +20,7 @@ function getJwtOptions() {
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, role = 'customer' } = req.body;
+    const { username, email, password, role = 'customer', profile = {} } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -34,12 +34,13 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Create new user
+    // Create new user including optional profile fields (names, organization details, etc.)
     const user = new User({
       username,
       email,
       password,
-      role
+      role,
+      profile
     });
 
     await user.save();
@@ -238,13 +239,23 @@ router.put('/profile', async (req, res) => {
           country: a.country || ''
         };
       }
-      // Deep-merge profile to avoid wiping unrelated fields
+      // Prevent changing name fields after registration (names are immutable like email)
       const currentProfile = (user.profile && user.profile.toObject) ? user.profile.toObject() : (user.profile || {});
+      if (currentProfile.firstName || currentProfile.lastName || currentProfile.organizationName) {
+        delete incomingProfile.firstName;
+        delete incomingProfile.lastName;
+        delete incomingProfile.organizationName;
+      }
+      // Deep-merge profile to avoid wiping unrelated fields
       const mergedAddress = incomingProfile.address
         ? { ...(currentProfile.address || {}), ...incomingProfile.address }
         : currentProfile.address;
       const mergedProfile = { ...currentProfile, ...incomingProfile };
       if (incomingProfile.address) mergedProfile.address = mergedAddress;
+      // When NGO resubmits verification (verificationSubmittedAt sent), clear rejection reason
+      if (user.role === 'ngo' && incomingProfile.verificationSubmittedAt && currentProfile.rejectionReason) {
+        mergedProfile.rejectionReason = null;
+      }
       updates.profile = mergedProfile;
     }
 

@@ -16,6 +16,7 @@ import LocationModal from "./components/LocationModal";
 const AppContent = () => {
     const [showLogin, setShowLogin] = useState(false);
     const [showLocationModal, setShowLocationModal] = useState(false);
+    const [isAdminLogin, setIsAdminLogin] = useState(false);
     const { isAuthenticated, login, user, checkAuthStatus } = useAuth();
     const navigate = useNavigate();
 
@@ -66,8 +67,22 @@ const AppContent = () => {
                 navigate(`/${role}`);
             }
         } else {
+            setIsAdminLogin(false);
             setShowLogin(true);
         }
+    };
+
+    const handleAdminLogin = () => {
+        if (isAuthenticated) {
+            const role = (user?.role || 'customer').toLowerCase();
+            if (role === 'admin') {
+                navigate('/admin');
+            }
+            return;
+        }
+
+        setIsAdminLogin(true);
+        setShowLogin(true);
     };
 
     return (
@@ -80,12 +95,14 @@ const AppContent = () => {
                         <>
                             <GreenShelfHomepage
                                 onNavigateToLogin={handleNavigateToLogin}
+                                onAdminLogin={handleAdminLogin}
                                 loggedIn={isAuthenticated}
                                 currentUser={user}
                             />
                             {showLogin && (
                                 <LoginCard
                                     onClose={() => setShowLogin(false)}
+                                    isAdminLogin={isAdminLogin}
                                     onLoginSuccess={handleLoginSuccess}
                                 />
                             )}

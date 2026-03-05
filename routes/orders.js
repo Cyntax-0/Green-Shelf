@@ -21,7 +21,6 @@ router.post('/create', async (req, res) => {
     const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
     const decoded = jwt.verify(token, jwtSecret);
 
-    // Ensure customer has completed profile
     const { default: User } = await import('../models/User.js');
     const user = await User.findById(decoded.userId);
     if (!user) {
@@ -29,9 +28,6 @@ router.post('/create', async (req, res) => {
     }
     if (user.role !== 'customer') {
       return res.status(403).json({ success: false, message: 'Only customers can place orders' });
-    }
-    if (!user.isProfileComplete()) {
-      return res.status(403).json({ success: false, message: 'Complete your profile to place orders' });
     }
 
     const { shippingAddress, billingAddress, paymentMethod, shippingMethod } = req.body;

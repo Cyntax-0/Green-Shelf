@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import "./styles/Homepage.css";
 import api from './services/api';
 
-const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
+const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, currentUser }) => {
     const [cart, setCart] = useState([]);
     const [cartStore, setCartStore] = useState(null);
     const [products, setProducts] = useState([]);
@@ -356,9 +356,17 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
                             Admin Panel
                         </button>
                     )}
-                    <button className="auth-button" onClick={handleProfileNavigation}>
-                        {loggedIn ? (displayName || 'Profile') : 'Login'}
-                    </button>
+                    {!loggedIn && (
+                        <button className="auth-button" onClick={onAdminLogin}>
+                            Admin Login
+                        </button>
+                    )}
+                    {/* Hide normal login/profile button when admin is logged in */}
+                    {!(loggedIn && (currentUser?.role?.toLowerCase() === 'admin')) && (
+                        <button className="auth-button" onClick={handleProfileNavigation}>
+                            {loggedIn ? (displayName || 'Profile') : 'Login'}
+                        </button>
+                    )}
                 </nav>
             </header>
 
@@ -422,12 +430,12 @@ const GreenShelfHomepage = ({ onNavigateToLogin, loggedIn, currentUser }) => {
                                 <p><strong>Expiry:</strong> {product.expiry}</p>
                                 {daysToExpiry <= 5 && daysToExpiry > 0 && (
                                     <p className="expiry-warning" style={{color: '#d32f2f', fontWeight: 'bold'}}>
-                                        ⚠ Expires in {daysToExpiry} day{daysToExpiry !== 1 ? 's' : ''}!
+                                        Expires in {daysToExpiry} day{daysToExpiry !== 1 ? 's' : ''}
                                     </p>
                                 )}
                                 {daysToExpiry <= 0 && (
                                     <p className="expiry-warning" style={{color: '#d32f2f', fontWeight: 'bold'}}>
-                                        ⚠ EXPIRED!
+                                        EXPIRED
                                     </p>
                                 )}
                                 {product.seller && (

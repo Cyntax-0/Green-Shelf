@@ -1208,3 +1208,200 @@ button[class=""]:not(.primary):not(.danger):not(.logout-btn):not(.remove-button)
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
 }
+
+/* Modal overlay and dialog (admin reject, etc.) */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-in;
+}
+
+.modal-dialog {
+    max-width: 500px;
+    width: 90%;
+    padding: 2rem;
+}
+
+.modal-dialog h3 {
+    margin-bottom: 1rem;
+}
+
+.modal-dialog .modal-description {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.modal-dialog .product-actions {
+    margin-top: 1rem;
+}
+
+.modal-dialog .modal-textarea {
+    min-height: 100px;
+}
+
+/* Verification banners and badges */
+.verification-required-banner {
+    background: rgba(255, 243, 205, 0.95);
+    border: 2px solid #ffc107;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+}
+
+.verification-required-banner h3 {
+    color: #856404;
+}
+
+.verification-required-banner p {
+    color: #856404;
+}
+
+.verification-success-banner {
+    background: rgba(212, 237, 218, 0.95);
+    border: 2px solid #28a745;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+}
+
+.verification-success-banner p {
+    color: #155724;
+    margin: 0;
+}
+
+.rejection-alert {
+    background: #ffebee;
+    border: 1px solid #ef5350;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.rejection-alert p {
+    margin: 0;
+    color: #c62828;
+}
+
+.rejection-alert p + p {
+    margin-top: 0.25rem;
+}
+
+.rejection-alert .rejection-hint {
+    color: #5d4037;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.verification-hint {
+    color: #d32f2f;
+    margin-bottom: 1rem;
+}
+
+.verification-pending-hint {
+    color: #ff9800;
+}
+
+.verification-pending-badge {
+    background: #ff9800;
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+}
+
+.verification-verified-badge {
+    background: #4caf50;
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+}
+
+.status-approved {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.status-rejected {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Verification document preview */
+.verification-document-preview {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.verification-document-preview p {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.verification-document-preview img {
+    max-width: 100%;
+    max-height: 240px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.verification-document-preview .doc-link {
+    color: #60a5fa;
+    text-decoration: underline;
+}
+
+.document-preview-inline {
+    margin-bottom: 1rem;
+}
+
+.document-preview-inline img {
+    max-width: 200px;
+    height: 150px;
+    object-fit: contain;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Admin history section */
+.admin-history-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-history-section .history-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 0.5rem;
+}
+
+.admin-history-section .history-item {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0.25rem 0;
+}
+
+.admin-history-section .history-reason {
+    display: block;
+    margin-left: 1rem;
+}
+
+/* Back button */
+.btn-back {
+    margin-bottom: 1rem;
+}

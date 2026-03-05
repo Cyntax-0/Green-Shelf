@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./styles/Card.css";
 
-const LoginCard = ({ onClose, onLoginSuccess }) => {
+const LoginCard = ({ onClose, onLoginSuccess, isAdminLogin = false }) => {
     const [isSignUp, setIsSignUp] = useState(false);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [signUpType, setSignUpType] = useState("Customer");
@@ -20,6 +20,8 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
     const navigate = useNavigate();
 
     const toggleMode = () => {
+        // Admin login is login-only; do not allow switching to signup
+        if (isAdminLogin) return;
         setIsSignUp(!isSignUp);
         setIsForgotPassword(false);
         setSignUpType("Customer");
@@ -76,6 +78,24 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
                     safeUsername = (safeUsername + "000").slice(0, 3);
                 }
 
+                // Build profile payload so that names appear on profile pages
+                let profile = {};
+                if (signUpType === "Customer") {
+                    profile = {
+                        firstName: formData.firstName,
+                        lastName: formData.lastName
+                    };
+                } else if (signUpType === "NGO") {
+                    profile = {
+                        organizationName: formData.ngoName
+                    };
+                } else if (signUpType === "Seller") {
+                    // Use shop name as initial firstName so it shows in profile/greeting
+                    profile = {
+                        firstName: formData.shopName
+                    };
+                }
+
                 const res = await fetch("http://localhost:5001/api/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -83,7 +103,8 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
                         username: safeUsername,
                         email: formData.email,
                         password: formData.password,
-                        role: signUpType.toLowerCase()
+                        role: signUpType.toLowerCase(),
+                        profile
                     })
                 });
 
@@ -104,7 +125,12 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
                     setError(data.message);
                 }
             } else {
-                const res = await fetch("http://localhost:5001/api/auth/login", {
+                // Login
+                const loginEndpoint = isAdminLogin
+                    ? "http://localhost:5001/api/admin/login"
+                    : "http://localhost:5001/api/auth/login";
+
+                const res = await fetch(loginEndpoint, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -147,10 +173,10 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
                         ? "Forgot Password"
                         : isSignUp
                             ? `${signUpType} Sign Up`
-                            : "Login"}
+                            : (isAdminLogin ? "Admin Login" : "Login")}
                 </h2>
 
-                {isSignUp && !isForgotPassword && (
+                {isSignUp && !isForgotPassword && !isAdminLogin && (
                     <div className="signup-type-tabs">
                         {["Customer", "NGO", "Seller"].map((type) => (
                             <button
@@ -260,7 +286,7 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
 
                 {error && <p className="error-message">{error}</p>}
 
-                {!isForgotPassword && (
+                {!isForgotPassword && !isAdminLogin && (
                     <p onClick={toggleMode} className="toggle-link">
                         {isSignUp ? "Already have an account? Login" : "Don't have an account? Sign Up"}
                     </p>
@@ -268,7 +294,7 @@ const LoginCard = ({ onClose, onLoginSuccess }) => {
 
                 {isForgotPassword && (
                     <p className="toggle-link" onClick={() => setIsForgotPassword(false)}>
-                        ← Back to Login
+                        Back to Login
                     </p>
                 )}
             </div>

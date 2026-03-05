@@ -124,10 +124,31 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 // Determine whether the user profile is complete enough for actions
 userSchema.methods.isProfileComplete = function() {
   const p = this.profile || {};
-  const hasName = Boolean((p.firstName || '').trim()) && Boolean((p.lastName || '').trim());
-  const hasPhone = Boolean((p.phone || '').trim());
+
+  let baseName = '';
+  if (this.role === 'ngo') {
+    baseName =
+      (p.organizationName ||
+        this.username ||
+        this.email ||
+        '').toString().trim();
+  } else {
+    baseName =
+      (p.firstName ||
+        this.username ||
+        this.email ||
+        '').toString().trim();
+  }
+
+  const hasName = Boolean(baseName);
+  const hasPhone = Boolean((p.phone || '').toString().trim());
   const addr = p.address || {};
-  const hasAnyAddress = Boolean((addr.street || addr.city || addr.state || addr.zipCode || addr.country || '').toString().trim());
+  const hasAnyAddress = Boolean(
+    (addr.street || addr.city || addr.state || addr.zipCode || addr.country || '')
+      .toString()
+      .trim()
+  );
+
   return hasName && hasPhone && hasAnyAddress;
 };
 

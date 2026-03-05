@@ -193,6 +193,26 @@ const AdminPage = () => {
                                             {ngo.profile.bio && <p><strong>Bio:</strong> {ngo.profile.bio}</p>}
                                             {ngo.profile.verifiedAt && <p><strong>Verified:</strong> {new Date(ngo.profile.verifiedAt).toLocaleDateString()}</p>}
                                             {ngo.profile.rejectionReason && <p style={{ color: '#ef4444' }}><strong>Rejection Reason:</strong> {ngo.profile.rejectionReason}</p>}
+                                            {ngo.profile.verificationDocumentUrl && (
+                                                <div className="verification-document-preview">
+                                                    <p>Verification Certificate / Document:</p>
+                                                    {ngo.profile.verificationDocumentUrl.startsWith('data:image/') ? (
+                                                        <img
+                                                            src={ngo.profile.verificationDocumentUrl}
+                                                            alt="NGO verification document"
+                                                        />
+                                                    ) : (
+                                                        <a
+                                                            href={ngo.profile.verificationDocumentUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="doc-link"
+                                                        >
+                                                            View document (PDF or image)
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </>
                                     )}
                                     <p><strong>Joined:</strong> {new Date(ngo.createdAt).toLocaleDateString()}</p>
@@ -204,12 +224,15 @@ const AdminPage = () => {
                                     </div>
                                 )}
                                 {activeTab === 'verified' && ngo.profile?.adminHistory && ngo.profile.adminHistory.length > 0 && (
-                                    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                        <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginBottom: '0.5rem' }}><strong>History:</strong></p>
+                                    <div className="admin-history-section">
+                                        <p className="history-label"><strong>History:</strong></p>
                                         {ngo.profile.adminHistory.slice(-3).reverse().map((history, idx) => (
-                                            <p key={idx} style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', margin: '0.25rem 0' }}>
-                                                {history.action === 'approved' ? '✓' : '✗'} {history.action} by {history.adminEmail} on {new Date(history.timestamp).toLocaleDateString()}
-                                                {history.reason && <span style={{ display: 'block', marginLeft: '1rem' }}>Reason: {history.reason}</span>}
+                                            <p key={idx} className="history-item">
+                                                <span className={history.action === 'approved' ? 'status-approved' : 'status-rejected'}>
+                                                    {history.action === 'approved' ? 'Approved' : 'Rejected'}
+                                                </span>
+                                                {' by '}{history.adminEmail}{' on '}{new Date(history.timestamp).toLocaleDateString()}
+                                                {history.reason && <span className="history-reason">Reason: {history.reason}</span>}
                                             </p>
                                         ))}
                                     </div>
@@ -220,24 +243,11 @@ const AdminPage = () => {
                 )}
             </main>
 
-            {/* Rejection Reason Modal */}
             {rejectModal.open && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0, 0, 0, 0.8)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000,
-                    backdropFilter: 'blur(10px)'
-                }}>
-                    <div className="card" style={{ maxWidth: '500px', width: '90%', padding: '2rem' }}>
-                        <h3 style={{ marginBottom: '1rem' }}>Reject NGO Verification</h3>
-                        <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                <div className="modal-overlay" onClick={closeRejectModal}>
+                    <div className="card modal-dialog" onClick={(e) => e.stopPropagation()}>
+                        <h3>Reject NGO Verification</h3>
+                        <p className="modal-description">
                             Please provide a reason for rejecting this NGO verification request.
                         </p>
                         <div className="info-field">
@@ -247,10 +257,10 @@ const AdminPage = () => {
                                 onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
                                 placeholder="Enter the reason for rejection..."
                                 rows={4}
-                                style={{ minHeight: '100px' }}
+                                className="modal-textarea"
                             />
                         </div>
-                        <div className="product-actions" style={{ marginTop: '1rem' }}>
+                        <div className="product-actions">
                             <button className="secondary" onClick={closeRejectModal}>Cancel</button>
                             <button className="danger" onClick={handleReject}>Reject</button>
                         </div>

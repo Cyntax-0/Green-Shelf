@@ -233,7 +233,7 @@ export const LocationModal = ({ isOpen, onClose, onLocationSet, currentUser }) =
         <div className="location-modal-content">
           {isLocationLocked && (
             <div className="location-error" style={{ background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.15) 0%, rgba(249, 115, 22, 0.1) 100%)', borderLeft: '4px solid #f97316', color: '#fdba74', marginBottom: '16px' }}>
-              <strong>⚠️ Location Locked:</strong> As a {currentUser?.role === 'seller' ? 'shop/seller' : 'NGO'}, your location has been set and cannot be changed. This ensures consistency for your customers and delivery serviceability.
+              <strong>Location Locked:</strong> As a {currentUser?.role === 'seller' ? 'shop/seller' : 'NGO'}, your location has been set and cannot be changed. This ensures consistency for your customers and delivery serviceability.
             </div>
           )}
           <p className="location-modal-description">
@@ -249,32 +249,32 @@ export const LocationModal = ({ isOpen, onClose, onLocationSet, currentUser }) =
                 onClick={() => setMethod('auto')}
                 disabled={loading}
               >
-                📍 Use Current Location
+                Use Current Location
               </button>
               <button
                 className={`method-button ${method === 'manual' ? 'active' : ''}`}
                 onClick={() => setMethod('manual')}
                 disabled={loading}
               >
-                ✏️ Enter Manually
+                Enter Manually
               </button>
             </div>
           )}
 
           {isLocationLocked ? (
             <div className="location-preview">
-              <p><strong>📍 Coordinates:</strong> {currentUser.location.latitude?.toFixed(6)}, {currentUser.location.longitude?.toFixed(6)}</p>
+              <p><strong>Coordinates:</strong> {currentUser.location.latitude?.toFixed(6)}, {currentUser.location.longitude?.toFixed(6)}</p>
               {currentUser.location.address && (
-                <p><strong>📍 Address:</strong> {currentUser.location.address}</p>
+                <p><strong>Address:</strong> {currentUser.location.address}</p>
               )}
               {(currentUser.location.city || currentUser.location.state) && (
-                <p><strong>📍 City, State:</strong> {currentUser.location.city}{currentUser.location.city && currentUser.location.state ? ', ' : ''}{currentUser.location.state}</p>
+                <p><strong>City, State:</strong> {currentUser.location.city}{currentUser.location.city && currentUser.location.state ? ', ' : ''}{currentUser.location.state}</p>
               )}
               {currentUser.location.country && (
-                <p><strong>📍 Country:</strong> {currentUser.location.country}</p>
+                <p><strong>Country:</strong> {currentUser.location.country}</p>
               )}
               {currentUser.location.zipCode && (
-                <p><strong>📍 Zip Code:</strong> {currentUser.location.zipCode}</p>
+                <p><strong>Zip Code:</strong> {currentUser.location.zipCode}</p>
               )}
             </div>
           ) : method === 'auto' ? (
@@ -284,17 +284,17 @@ export const LocationModal = ({ isOpen, onClose, onLocationSet, currentUser }) =
                 onClick={handleGetLocation}
                 disabled={loading}
               >
-                {loading ? 'Getting Location...' : '📍 Get My Location'}
+                {loading ? 'Getting Location...' : 'Get My Location'}
               </button>
 
               {locationData && (
                 <div className="location-preview">
-                  <p><strong>📍 Coordinates:</strong> {locationData.latitude?.toFixed(6)}, {locationData.longitude?.toFixed(6)}</p>
+                  <p><strong>Coordinates:</strong> {locationData.latitude?.toFixed(6)}, {locationData.longitude?.toFixed(6)}</p>
                   {manualLocation.address && (
-                    <p><strong>📍 Address:</strong> {manualLocation.address}</p>
+                    <p><strong>Address:</strong> {manualLocation.address}</p>
                   )}
                   {(manualLocation.city || manualLocation.state) && (
-                    <p><strong>📍 City, State:</strong> {manualLocation.city}{manualLocation.city && manualLocation.state ? ', ' : ''}{manualLocation.state}</p>
+                    <p><strong>City, State:</strong> {manualLocation.city}{manualLocation.city && manualLocation.state ? ', ' : ''}{manualLocation.state}</p>
                   )}
                 </div>
               )}
@@ -370,7 +370,7 @@ export const LocationModal = ({ isOpen, onClose, onLocationSet, currentUser }) =
                 onClick={handleManualSubmit}
                 disabled={loading}
               >
-                {loading ? 'Looking up coordinates...' : '📍 Get Coordinates from Address'}
+                {loading ? 'Looking up coordinates...' : 'Get Coordinates from Address'}
               </button>
             </div>
           )}

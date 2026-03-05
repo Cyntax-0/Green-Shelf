@@ -13,8 +13,7 @@ const CustomerProfile = () => {
     const displayEmail = user?.email || "";
 
     const [profile, setProfile] = useState({
-        firstName: user?.profile?.firstName || "",
-        lastName: user?.profile?.lastName || "",
+        // Name comes from registration and is immutable like email
         phone: user?.profile?.phone || "",
         address: {
             street: user?.profile?.address?.street || "",
@@ -31,7 +30,6 @@ const CustomerProfile = () => {
 
     const [donations, setDonations] = useState([]);
 
-    // ------------------ NEW STATES ------------------
     const [notifications, setNotifications] = useState([]);
 
     const [historySummary, setHistorySummary] = useState({
@@ -52,7 +50,6 @@ const CustomerProfile = () => {
         expiry: '',
         notes: ''
     });
-    // ------------------ END NEW STATES ------------------
 
     const [donationLocationFilter, setDonationLocationFilter] = useState('');
     
@@ -149,7 +146,7 @@ const CustomerProfile = () => {
 
     const handleSaveProfile = async () => {
         const p = profile;
-        const requiredFilled = (p.firstName && p.lastName && p.phone && p.address.street && p.address.city && p.address.state && p.address.zipCode && p.address.country);
+        const requiredFilled = (p.phone && p.address.street && p.address.city && p.address.state && p.address.zipCode && p.address.country);
         if (!requiredFilled) {
             setBanner({ type: 'warning', text: 'Please fill all fields before updating profile.' });
             setTimeout(() => setBanner(null), 2500);
@@ -169,22 +166,24 @@ const CustomerProfile = () => {
 
     const isProfileComplete = () => {
         const p = user?.profile || {};
-        const hasName = Boolean((p.firstName || '').trim()) && Boolean((p.lastName || '').trim());
-        const hasPhone = Boolean((p.phone || '').trim());
-        const addrs = p.addresses || p.address;
-        const hasAddress = Array.isArray(addrs)
-            ? addrs.some(a => (a || '').toString().trim())
-            : !!(addrs && (addrs.street || addrs.city || addrs.state || addrs.zipCode || addrs.country));
+        // Treat name from registration (firstName / username / email) as sufficient
+        const baseName =
+            (p.firstName ||
+            user?.username ||
+            (user?.email ? user.email.split('@')[0] : '') ||
+            '').toString().trim();
+        const hasName = Boolean(baseName);
+        const hasPhone = Boolean((p.phone || '').toString().trim());
+        const addr = p.address || {};
+        const hasAddress = Boolean(
+            (addr.street || addr.city || addr.state || addr.zipCode || addr.country || '')
+                .toString()
+                .trim()
+        );
         return hasName && hasPhone && hasAddress;
     };
 
     const handleDonateItem = () => {
-        if (!isProfileComplete()) {
-            setBanner({ type: 'warning', text: 'Complete your profile (name, phone, address) before making a donation.' });
-            setTimeout(() => setBanner(null), 2500);
-            setActiveTab('profile');
-            return;
-        }
         setDonationFormOpen(true);
     };
 
@@ -200,12 +199,6 @@ const CustomerProfile = () => {
     };
 
     const submitDonation = async () => {
-        if (!isProfileComplete()) {
-            setBanner({ type: 'warning', text: 'Complete your profile before saving a donation.' });
-            setTimeout(() => setBanner(null), 2500);
-            setActiveTab('profile');
-            return;
-        }
         if (!donationForm.name || !donationForm.quantityValue || !donationForm.expiry) {
             setBanner({ type: 'warning', text: 'Please fill all donation fields.' });
             return;
@@ -318,10 +311,9 @@ const CustomerProfile = () => {
                     <button className={activeTab === "cart" ? "active" : ""} onClick={() => setActiveTab("cart")}>Cart ({cart.length})</button>
                     <button className={activeTab === "orders" ? "active" : ""} onClick={() => setActiveTab("orders")}>Orders</button>
                     <button className={activeTab === "donations" ? "active" : ""} onClick={() => setActiveTab("donations")}>My Donations</button>
-                    <button className={activeTab === "donate-to-ngo" ? "active" : ""} onClick={() => setActiveTab("donate-to-ngo")}>💝 Donate to NGO</button>
+                    <button className={activeTab === "donate-to-ngo" ? "active" : ""} onClick={() => setActiveTab("donate-to-ngo")}>Donate to NGO</button>
                     <button className={activeTab === "listings" ? "active" : ""} onClick={() => setActiveTab("listings")}>My Listings</button>
 
-                    {/* ----------- NEW TABS (wishlist removed) ------------ */}
                     <button className={activeTab === "notifications" ? "active" : ""} onClick={() => setActiveTab("notifications")}>Notifications ({notifications.filter(n => !n.read).length})</button>
                     <button className={activeTab === "history" ? "active" : ""} onClick={() => setActiveTab("history")}>History Summary</button>
                 </nav>
@@ -333,18 +325,13 @@ const CustomerProfile = () => {
 
             <main className="profile-main">
                 {banner && <div className={`banner ${banner.type}`}>{banner.text}</div>}
-                {/* -------- PROFILE -------- */}
                 {activeTab === "profile" && (
                     <div className="profile-section">
                         <h1>Customer Profile</h1>
                         <div className="profile-info">
                             <div className="info-field">
-                                <label>First Name:</label>
-                                <input value={profile.firstName} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} />
-                            </div>
-                            <div className="info-field">
-                                <label>Last Name:</label>
-                                <input value={profile.lastName} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} />
+                                <label>Name:</label>
+                                <input value={displayName} readOnly />
                             </div>
                             <div className="info-field">
                                 <label>Email:</label>
@@ -379,7 +366,6 @@ const CustomerProfile = () => {
                     </div>
                 )}
 
-                {/* -------- CART -------- */}
                 {activeTab === "cart" && (
                     <div className="cart-section">
                         <h2>Shopping Cart</h2>
@@ -412,7 +398,6 @@ const CustomerProfile = () => {
                     </div>
                 )}
 
-                {/* -------- ORDERS -------- */}
                 {activeTab === "orders" && (
                     <div className="orders-section">
                         <h2>Order History</h2>
@@ -434,14 +419,13 @@ const CustomerProfile = () => {
                     </div>
                 )}
 
-                {/* -------- DONATIONS -------- */}
                 {activeTab === "donations" && (
                     <div className="donations-section">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                             <h2>My Donations</h2>
                             <div style={{ display: 'flex', gap: '12px' }}>
                                 <button className="primary" onClick={() => setActiveTab('donate-to-ngo')}>
-                                    💝 Donate to Verified NGO
+                                    Donate to Verified NGO
                                 </button>
                                 {!donationFormOpen && (
                                     <button className="primary" onClick={handleDonateItem}>
@@ -611,7 +595,6 @@ const CustomerProfile = () => {
                 )}
 
 
-                {/* -------- DONATE TO NGO -------- */}
                 {activeTab === "donate-to-ngo" && (
                     <div className="donate-to-ngo-section card">
                         <h2>Donate to Verified NGOs</h2>
@@ -625,7 +608,7 @@ const CustomerProfile = () => {
                                     <div key={ngo._id} className="product-card border" style={{ cursor: 'pointer' }} onClick={() => setSelectedNGO(ngo)}>
                                         <div className="product-header">
                                             <h4>{ngo.name}</h4>
-                                            <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}>✓ Verified</span>
+                                            <span className="status-approved" style={{ fontSize: '12px' }}>Verified</span>
                                         </div>
                                         <div className="product-details">
                                             <p><strong>Email:</strong> {ngo.email}</p>
@@ -645,7 +628,7 @@ const CustomerProfile = () => {
                             </div>
                         ) : (
                             <div className="donation-form-section">
-                                <button style={{ marginBottom: '16px' }} onClick={() => setSelectedNGO(null)}>← Back to NGO List</button>
+                                <button className="btn-back" onClick={() => setSelectedNGO(null)}>Back to NGO List</button>
                                 <div className="card" style={{ padding: '24px' }}>
                                     <h3>Donating to: {selectedNGO.name}</h3>
                                     <p style={{ color: 'rgba(232, 237, 242, 0.7)', marginBottom: '24px' }}>
@@ -798,7 +781,6 @@ const CustomerProfile = () => {
                     </div>
                 )}
 
-                {/* -------- NOTIFICATIONS (NEW) -------- */}
                 {activeTab === "notifications" && (
                     <div className="notifications-section">
                         <h2>Notifications</h2>
@@ -817,7 +799,6 @@ const CustomerProfile = () => {
                     </div>
                 )}
 
-                {/* -------- HISTORY SUMMARY (NEW) -------- */}
                 {activeTab === "history" && (
                     <div className="history-section">
                         <h2>History Summary</h2>

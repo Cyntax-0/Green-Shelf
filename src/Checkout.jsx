@@ -245,7 +245,7 @@ const Checkout = () => {
                             </div>
 
                             {showSuccess && (
-                                <div className="banner success">✓ Order Placed Successfully! Redirecting...</div>
+                                <div className="banner success">Order Placed Successfully. Redirecting...</div>
                             )}
 
                             <div className="inline-form" style={{ display: 'flex', gap: '12px', background: 'transparent', border: 'none', padding: 0, marginTop: '1rem' }}>

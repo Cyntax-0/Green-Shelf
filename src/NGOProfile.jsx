@@ -1,4 +1,3 @@
-// --------------------- NGO PROFILE ---------------------
 import React, { useState, useEffect } from "react";
 import api from "./services/api";
 import { useNavigate } from "react-router-dom";
@@ -10,12 +9,12 @@ const NGOProfile = () => {
     const { user, logout, checkAuthStatus } = useAuth();
 
     const [profile, setProfile] = useState({
-        name: "Food for All NGO",
+        name: user?.profile?.organizationName || user?.username || "Food for All NGO",
         email: user?.email || "ngo@foodforall.org",
-        phone: "",
-        registration: "",
-        address: "",
-        mission: ""
+        phone: user?.profile?.phone || "",
+        registration: user?.profile?.registration || "",
+        address: user?.profile?.address || "",
+        mission: user?.profile?.bio || ""
     });
 
     const [verificationStatus, setVerificationStatus] = useState({
@@ -34,10 +33,9 @@ const NGOProfile = () => {
 
     const [receivedDonations, setReceivedDonations] = useState([]);
 
-    // ------------------ AUTOMATIC PARTNERS STATE ------------------
     const [partners, setPartners] = useState([]);
-    
-    // Automatically aggregate partners based on receivedDonations
+    const [messages, setMessages] = useState([]);
+
     useEffect(() => {
         const partnerMap = {};
         receivedDonations.forEach(donation => {
@@ -47,11 +45,6 @@ const NGOProfile = () => {
         });
         setPartners(Object.values(partnerMap));
     }, [receivedDonations]);
-    // ------------------ END AUTOMATIC PARTNERS ------------------
-
-    // ------------------ NEW STATE FOR MESSAGES ------------------
-    const [messages, setMessages] = useState([]);
-    // ------------------ END NEW STATE ------------------
 
     const navigate = useNavigate();
     const handleNavigateHome = () => navigate("/home");
@@ -67,6 +60,28 @@ const NGOProfile = () => {
         };
         reader.readAsDataURL(file);
     };
+
+    // Sync profile and verification form from server (e.g. when rejected, for resubmission)
+    useEffect(() => {
+        if (user?.profile?.rejectionReason && user?.profile) {
+            const p = user.profile;
+            const addr = p.address;
+            const addrStr = typeof addr === 'string' ? addr : (addr ? [addr.street, addr.city, addr.state, addr.zipCode, addr.country].filter(Boolean).join(', ') : '');
+            setProfile({
+                name: p.organizationName || user?.username || user?.email || '',
+                email: user?.email || '',
+                phone: p.phone || '',
+                registration: p.registration || '',
+                address: addrStr || (typeof addr === 'object' ? '' : ''),
+                mission: p.bio || ''
+            });
+            setVerificationForm(f => ({
+                ...f,
+                registrationNumber: p.registration || '',
+                documentPreview: p.verificationDocumentUrl || ''
+            }));
+        }
+    }, [user?.profile?.rejectionReason, user?.profile, user?.email, user?.username]);
 
     // Sync verification status and notifications from server user
     useEffect(() => {
@@ -172,7 +187,6 @@ const NGOProfile = () => {
                     <button className={activeTab === "purchases" ? "active" : ""} onClick={() => setActiveTab("purchases")}>Purchases</button>
                     <button className={activeTab === "profile" ? "active" : ""} onClick={() => setActiveTab("profile")}>Profile</button>
 
-                    {/* ----------- NEW TABS ------------ */}
                     <button className={activeTab === "messages" ? "active" : ""} onClick={() => setActiveTab("messages")}>Messages / Notifications</button>
                     <button className={activeTab === "partners" ? "active" : ""} onClick={() => setActiveTab("partners")}>Partnerships / Seller Network</button>
                 </nav>
@@ -185,25 +199,33 @@ const NGOProfile = () => {
             <main className="profile-main">
                 {banner && <div className={`banner ${banner.type}`}>{banner.text}</div>}
                 {!verificationStatus.verified && activeTab !== "profile" && (
-                    <div className="card" style={{ background: '#fff3cd', border: '2px solid #ffc107', padding: 16, marginBottom: 16 }}>
-                        <h3 style={{ color: '#856404' }}>⚠️ Verification Required</h3>
-                        <p style={{ color: '#856404' }}>You must verify your NGO identity before accessing this feature.</p>
+                    <div className="card verification-required-banner">
+                        <h3>Verification Required</h3>
+                        <p>You must verify your NGO identity before accessing this feature.</p>
                         <button className="primary" onClick={() => setActiveTab("profile")}>Go to Profile</button>
                     </div>
                 )}
                 {verificationStatus.verified && activeTab !== "profile" && (
-                    <div className="card" style={{ background: '#d4edda', border: '2px solid #28a745', padding: 8, marginBottom: 16 }}>
-                        <p style={{ color: '#155724', margin: 0 }}>✓ Verified NGO - All features unlocked</p>
+                    <div className="card verification-success-banner">
+                        <p>Verified NGO - All features unlocked</p>
                     </div>
                 )}
 
                 {activeTab === "profile" && (
                     <div className="profile-section card">
                         <h2>NGO Profile</h2>
-                        {!verificationStatus.verified && !profile.registration ? (
+                        {!verificationStatus.verified && (!profile.registration || user?.profile?.rejectionReason) ? (
                             <div className="verification-section">
-                                <h3>Verify Your NGO Identity</h3>
-                                <p style={{ color: '#d32f2f', marginBottom: 16 }}>⚠️ You must verify your NGO to receive donations and make purchases.</p>
+                                <h3>{user?.profile?.rejectionReason ? 'Update and Resubmit Verification' : 'Verify Your NGO Identity'}</h3>
+                                {user?.profile?.rejectionReason ? (
+                                    <div className="rejection-alert">
+                                        <p><strong>Your verification was rejected.</strong></p>
+                                        <p>Reason: {user.profile.rejectionReason}</p>
+                                        <p className="rejection-hint">Please update your details and upload a new document to resubmit.</p>
+                                    </div>
+                                ) : (
+                                    <p className="verification-hint">You must verify your NGO to receive donations and make purchases.</p>
+                                )}
                                 <div className="verification-form">
                                     <div className="info-field">
                                         <label>Registration Number:</label>
@@ -218,14 +240,18 @@ const NGOProfile = () => {
                                         <input type="file" accept="image/*,.pdf" onChange={handleVerificationDocument} />
                                     </div>
                                     {verificationForm.documentPreview && (
-                                        <div style={{ marginBottom: 16 }}>
+                                        <div className="document-preview-inline">
                                             <p>Document Preview:</p>
-                                            <img src={verificationForm.documentPreview} alt="Document preview" style={{ maxWidth: 200, height: 150, objectFit: 'contain' }} />
+                                            {verificationForm.documentPreview.startsWith('data:image/') ? (
+                                                <img src={verificationForm.documentPreview} alt="Document preview" />
+                                            ) : (
+                                                <a href={verificationForm.documentPreview} target="_blank" rel="noopener noreferrer" className="doc-link">View current document</a>
+                                            )}
                                         </div>
                                     )}
                                     <div className="info-field">
                                         <label>Organization Name:</label>
-                                        <input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
+                                        <input value={profile.name} readOnly />
                                     </div>
                                     <div className="info-field">
                                         <label>Phone:</label>
@@ -239,13 +265,13 @@ const NGOProfile = () => {
                                         <label>Mission Statement:</label>
                                         <textarea value={profile.mission} onChange={(e) => setProfile({ ...profile, mission: e.target.value })} />
                                     </div>
-                                    <button className="primary" onClick={submitVerification}>Submit for Verification</button>
+                                    <button className="primary" onClick={submitVerification}>{user?.profile?.rejectionReason ? 'Resubmit for Verification' : 'Submit for Verification'}</button>
                                 </div>
                             </div>
                         ) : profile.registration && !verificationStatus.verified ? (
                             <div className="profile-info">
-                                <div className="info-field" style={{ background: '#ff9800', color: 'white', padding: 8, borderRadius: 4 }}>
-                                    <strong>⏳ Verification Pending</strong>
+                                <div className="info-field verification-pending-badge">
+                                    <strong>Verification Pending</strong>
                                 </div>
                                 <div className="info-field">
                                     <label>Organization Name:</label>
@@ -271,15 +297,15 @@ const NGOProfile = () => {
                                     <label>Mission Statement:</label>
                                     <textarea value={profile.mission} readOnly />
                                 </div>
-                                <p style={{ color: '#ff9800' }}>Your verification request is pending admin approval. All details are locked until verified.</p>
-                                <div style={{ display: 'flex', gap: 8 }}>
+                                <p className="verification-pending-hint">Your verification request is pending admin approval. All details are locked until verified.</p>
+                                <div className="profile-actions">
                                     <button className="primary" onClick={refreshVerificationNow}>Refresh verification status</button>
                                 </div>
                             </div>
                         ) : (
                             <div className="profile-info">
-                                <div className="info-field" style={{ background: '#4caf50', color: 'white', padding: 8, borderRadius: 4 }}>
-                                    <strong>✓ Verified NGO</strong>
+                                <div className="info-field verification-verified-badge">
+                                    <strong>Verified NGO</strong>
                                 </div>
                                 <div className="info-field">
                                     <label>Organization Name:</label>
@@ -311,7 +337,6 @@ const NGOProfile = () => {
                     </div>
                 )}
 
-                {/* -------- MESSAGES / NOTIFICATIONS -------- */}
                 {activeTab === "messages" && (
                     <div className="messages-section card">
                         <h2>Messages / Notifications</h2>
@@ -328,7 +353,6 @@ const NGOProfile = () => {
                     </div>
                 )}
 
-                {/* -------- PARTNERSHIPS / SELLER NETWORK -------- */}
                 {activeTab === "partners" && (
                     <div className="partners-section card">
                         <h2>Partnerships / Seller Network</h2>

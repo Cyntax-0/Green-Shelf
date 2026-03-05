@@ -8,8 +8,7 @@ const SellerProfile = () => {
     const [activeTab, setActiveTab] = useState("products");
     const { user, token, logout, checkAuthStatus } = useAuth();
     const [profile, setProfile] = useState({
-        firstName: user?.profile?.firstName || "",
-        lastName: user?.profile?.lastName || "",
+        // Name comes from registration and is immutable like email
         phone: user?.profile?.phone || "",
         address: {
             street: user?.profile?.address?.street || "",
@@ -124,17 +123,25 @@ const SellerProfile = () => {
 
     const isProfileComplete = () => {
         const p = user?.profile || {};
-        const hasName = Boolean((p.firstName || '').trim()) && Boolean((p.lastName || '').trim());
-        const hasPhone = Boolean((p.phone || '').trim());
+        // Treat name from registration (firstName / username / email) as sufficient
+        const baseName =
+            (p.firstName ||
+            user?.username ||
+            (user?.email ? user.email.split('@')[0] : '') ||
+            '').toString().trim();
+        const hasName = Boolean(baseName);
+        const hasPhone = Boolean((p.phone || '').toString().trim());
         const addr = p.address;
         const hasAddress = Array.isArray(addr)
-            ? addr.some(a => (a || '').trim())
-            : !!(addr && (addr.street || addr.city || addr.state || addr.zipCode || addr.country));
+            ? addr.some(a => (a || '').toString().trim())
+            : !!(
+                addr &&
+                (addr.street || addr.city || addr.state || addr.zipCode || addr.country)
+            );
         return hasName && hasPhone && hasAddress;
     };
 
     const saveNewProduct = async () => {
-        if (!isProfileComplete()) { setBanner({ type: 'warning', text: 'Complete your profile (name, phone, address) before adding products/donations.' }); setTimeout(() => setBanner(null), 3000); return; }
         if (!newProduct.name) { setBanner({ type: 'warning', text: 'Product name is required.' }); return; }
         if (!newProduct.isDonate && Number(newProduct.price) <= 0) { setBanner({ type: 'warning', text: 'Price must be greater than 0 for sell items.' }); return; }
         if (!newProduct.expiry) { setBanner({ type: 'warning', text: 'Expiry date is required.' }); return; }
@@ -311,7 +318,7 @@ const SellerProfile = () => {
                 <nav className="profile-tabs">
                     <button className={activeTab === "products" ? "active" : ""} onClick={() => setActiveTab("products")}>Products</button>
                     <button className={activeTab === "sales" ? "active" : ""} onClick={() => setActiveTab("sales")}>Sales & Donations</button>
-                    <button className={activeTab === "donate-to-ngo" ? "active" : ""} onClick={() => setActiveTab("donate-to-ngo")}>💝 Donate to NGO</button>
+                    <button className={activeTab === "donate-to-ngo" ? "active" : ""} onClick={() => setActiveTab("donate-to-ngo")}>Donate to NGO</button>
                     <button className={activeTab === "analytics" ? "active" : ""} onClick={() => setActiveTab("analytics")}>Analytics</button>
                     <button className={activeTab === "profile" ? "active" : ""} onClick={() => setActiveTab("profile")}>Profile</button>
                 </nav>
@@ -329,7 +336,7 @@ const SellerProfile = () => {
                             <h2>Manage Products</h2>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <button className="secondary" onClick={updateAllPrices}>
-                                    🔄 Update Prices (Auto-discount)
+                                    Update Prices (Auto-discount)
                                 </button>
                                 <button className="primary" onClick={addNewProduct}>+ Add Product</button>
                             </div>
@@ -552,7 +559,7 @@ const SellerProfile = () => {
                                                         <p className="final-price">Current Price: ${finalPrice}</p>
                                                         {daysToExpiry <= 5 && (
                                                             <p style={{ color: '#e74c3c', fontWeight: 'bold' }}>
-                                                                ⚠️ Expires in {daysToExpiry} day{daysToExpiry !== 1 ? 's' : ''} - Auto-discounted!
+                                                                Expires in {daysToExpiry} day{daysToExpiry !== 1 ? 's' : ''} - Auto-discounted
                                                             </p>
                                                         )}
                                                     </>
@@ -605,7 +612,7 @@ const SellerProfile = () => {
                                     <div key={ngo._id} className="product-card border" style={{ cursor: 'pointer' }} onClick={() => setSelectedNGO(ngo)}>
                                         <div className="product-header">
                                             <h4>{ngo.name}</h4>
-                                            <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}>✓ Verified</span>
+                                            <span className="status-approved" style={{ fontSize: '12px' }}>Verified</span>
                                         </div>
                                         <div className="product-details">
                                             <p><strong>Email:</strong> {ngo.email}</p>
@@ -625,7 +632,7 @@ const SellerProfile = () => {
                             </div>
                         ) : (
                             <div className="donation-form-section">
-                                <button style={{ marginBottom: '16px' }} onClick={() => setSelectedNGO(null)}>← Back to NGO List</button>
+                                <button className="btn-back" onClick={() => setSelectedNGO(null)}>Back to NGO List</button>
                                 <div className="card" style={{ padding: '24px' }}>
                                     <h3>Donating to: {selectedNGO.name}</h3>
                                     <p style={{ color: 'rgba(232, 237, 242, 0.7)', marginBottom: '24px' }}>
@@ -811,12 +818,8 @@ const SellerProfile = () => {
                         <h2>Seller Profile</h2>
                         <div className="profile-info">
                             <div className="info-field">
-                                <label>First Name:</label>
-                                <input value={profile.firstName} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} />
-                            </div>
-                            <div className="info-field">
-                                <label>Last Name:</label>
-                                <input value={profile.lastName} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} />
+                                <label>Name:</label>
+                                <input value={displayName} readOnly />
                             </div>
                             <div className="info-field">
                                 <label>Email:</label>
@@ -848,7 +851,7 @@ const SellerProfile = () => {
                             </div>
                             <button className="primary" onClick={async () => {
                                 const p = profile;
-                                const allFilled = (p.firstName && p.lastName && p.phone && p.address.street && p.address.city && p.address.state && p.address.zipCode && p.address.country);
+                                const allFilled = (p.phone && p.address.street && p.address.city && p.address.state && p.address.zipCode && p.address.country);
                                 if (!allFilled) { setBanner({ type: 'warning', text: 'Please fill all fields before updating profile.' }); setTimeout(() => setBanner(null), 2500); return; }
                                 try {
                                     await api.auth.updateProfile(token, { profile: p });
