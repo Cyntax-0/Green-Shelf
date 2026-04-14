@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import session from 'express-session';
 import apiRoutes from './routes/api.js';
+import { cleanupExpiredProducts } from './utils/expiredProductCleanup.js';
 
 // Load environment variables
 dotenv.config();
@@ -102,6 +103,30 @@ process.on('SIGINT', async () => {
 
 // Connect to database
 connectDB();
+
+// Remove expired products from DB and carts
+const startExpiredProductCleanupScheduler = () => {
+  const intervalMinutes = 5;
+
+  const runCleanup = async () => {
+    const result = await cleanupExpiredProducts();
+    if (result.success) {
+      if (result.deletedProducts > 0) {
+        console.log(
+          `🧹 Expired cleanup: deleted ${result.deletedProducts} products, updated ${result.affectedCarts} carts`
+        );
+      }
+    } else {
+      console.error('Expired cleanup error:', result.error);
+    }
+  };
+
+  // Run once on startup, then periodically
+  runCleanup();
+  setInterval(runCleanup, intervalMinutes * 60 * 1000);
+};
+
+startExpiredProductCleanupScheduler();
 
 // API Routes
 app.use('/api', apiRoutes);
