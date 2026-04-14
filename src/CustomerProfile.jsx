@@ -43,6 +43,8 @@ const CustomerProfile = () => {
     const [selectedNGO, setSelectedNGO] = useState(null);
     const [directDonationForm, setDirectDonationForm] = useState({
         itemName: '',
+        imageUrl: '',
+        imageFile: null,
         quantity: 1,
         quantityUnit: 'units',
         category: 'Fruits',
@@ -50,6 +52,17 @@ const CustomerProfile = () => {
         expiry: '',
         notes: ''
     });
+
+    const onSelectDirectDonationImage = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            const base64 = reader.result;
+            setDirectDonationForm((prev) => ({ ...prev, imageFile: file, imageUrl: base64 }));
+        };
+        reader.readAsDataURL(file);
+    };
 
     const [donationLocationFilter, setDonationLocationFilter] = useState('');
     
@@ -143,6 +156,20 @@ const CustomerProfile = () => {
         };
         loadDonations();
     }, [token]);
+
+    // Sync backend notifications so donor sees NGO decision updates
+    React.useEffect(() => {
+        if (Array.isArray(user?.notifications)) {
+            const mapped = [...user.notifications]
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .map((n) => ({
+                    id: n.id,
+                    message: n.message,
+                    read: n.read
+                }));
+            setNotifications(mapped);
+        }
+    }, [user]);
 
     const handleSaveProfile = async () => {
         const p = profile;
@@ -538,7 +565,7 @@ const CustomerProfile = () => {
 
                                 <div>
                                     <button className="primary" onClick={submitDonation}>Save Donation</button>
-                                    <button style={{ marginLeft: 8 }} onClick={() => setDonationFormOpen(false)}>Cancel</button>
+                                    <button className="secondary" style={{ marginLeft: 8 }} onClick={() => setDonationFormOpen(false)}>Cancel</button>
                                 </div>
                             </div>
                         )}
@@ -644,6 +671,17 @@ const CustomerProfile = () => {
                                             />
                                         </div>
                                         <div className="row">
+                                            <label>Item Image (Optional)</label>
+                                            <input type="file" accept="image/*" onChange={onSelectDirectDonationImage} />
+                                        </div>
+                                        {directDonationForm.imageUrl && (
+                                            <img
+                                                src={directDonationForm.imageUrl}
+                                                alt="donation preview"
+                                                style={{ width: 180, height: 120, objectFit: "cover", borderRadius: 6 }}
+                                            />
+                                        )}
+                                        <div className="row">
                                             <label>Food Type</label>
                                             <select
                                                 value={directDonationForm.foodType}
@@ -734,7 +772,7 @@ const CustomerProfile = () => {
                                                         // Create a donation product that's linked to the NGO
                                                         const productData = {
                                                             name: directDonationForm.itemName,
-                                                            image: "https://via.placeholder.com/300x200?text=Donation",
+                                                            image: directDonationForm.imageUrl || "https://via.placeholder.com/300x200?text=Donation",
                                                             type: 'donate',
                                                             foodType: directDonationForm.foodType,
                                                             category: directDonationForm.category,
@@ -752,6 +790,8 @@ const CustomerProfile = () => {
                                                             setBanner({ type: 'success', text: `Donation to ${selectedNGO.name} created successfully!` });
                                                             setDirectDonationForm({
                                                                 itemName: '',
+                                                                imageUrl: '',
+                                                                imageFile: null,
                                                                 quantity: 1,
                                                                 quantityUnit: 'units',
                                                                 category: 'Fruits',
@@ -772,7 +812,7 @@ const CustomerProfile = () => {
                                             >
                                                 Submit Donation
                                             </button>
-                                            <button style={{ marginLeft: '8px' }} onClick={() => setSelectedNGO(null)}>Cancel</button>
+                                            <button className="secondary" style={{ marginLeft: '8px' }} onClick={() => setSelectedNGO(null)}>Cancel</button>
                                         </div>
                                     </div>
                                 </div>
@@ -790,7 +830,7 @@ const CustomerProfile = () => {
                         notifications.map(note => (
                             <div key={note.id} className={`notification-item ${note.read ? "read" : "unread"}`}>
                                 {note.message}
-                                <button onClick={() => {
+                                <button className="secondary" onClick={() => {
                                     setNotifications(notifications.map(n => n.id === note.id ? {...n, read: true} : n));
                                 }}>Mark as Read</button>
                             </div>

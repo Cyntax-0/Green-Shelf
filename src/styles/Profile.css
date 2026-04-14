@@ -313,6 +313,32 @@
     cursor: not-allowed;
 }
 
+.profile-page button:not(.profile-tabs button):not(.logout-btn) {
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.profile-page button:not(.profile-tabs button):not(.logout-btn):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.profile-page button:not(.profile-tabs button):not(.logout-btn):disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 .info-field button,
 button.primary,
 button.secondary {
@@ -409,6 +435,38 @@ button.secondary:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(16, 185, 129, 0.5);
     box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+/* Custom dropdown styling for all profile forms */
+.profile-page select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image:
+        linear-gradient(45deg, transparent 50%, rgba(232, 237, 242, 0.8) 50%),
+        linear-gradient(135deg, rgba(232, 237, 242, 0.8) 50%, transparent 50%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12));
+    background-position:
+        calc(100% - 16px) calc(50% - 2px),
+        calc(100% - 11px) calc(50% - 2px),
+        calc(100% - 36px) 50%;
+    background-size:
+        6px 6px,
+        6px 6px,
+        1px 60%;
+    background-repeat: no-repeat;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+
+.profile-page select:hover {
+    border-color: rgba(16, 185, 129, 0.35);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.profile-page select option {
+    background: #111827;
+    color: #e8edf2;
 }
 
 /* Cart Section */
@@ -566,6 +624,51 @@ button.secondary:hover {
     margin-bottom: 1rem;
 }
 
+/* NGO donations tab polish */
+.ngo-donations-list {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.ngo-donation-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.ngo-donation-image {
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ngo-donation-meta p,
+.ngo-donor-block p {
+    margin: 0.25rem 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.ngo-donor-block {
+    margin-top: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ngo-donation-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.ngo-donation-actions .primary,
+.ngo-donation-actions .danger {
+    margin-top: 0;
+    flex: 1;
+    justify-content: center;
+}
+
 /* Wishlist & Notifications */
 .wishlist-item,
 .notification-item {
@@ -706,22 +809,7 @@ img[alt="preview"] {
 }
 
 /* Secondary Button */
-button.secondary,
-button[class=""]:not(.primary):not(.danger):not(.logout-btn):not(.remove-button):not(.checkout-button) {
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-left: 0.5rem;
-}
-
-button.secondary:hover,
-button[class=""]:not(.primary):not(.danger):not(.logout-btn):not(.remove-button):not(.checkout-button):hover {
+button.secondary:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-1px);
@@ -825,12 +913,36 @@ button[class=""]:not(.primary):not(.danger):not(.logout-btn):not(.remove-button)
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.8125rem;
     line-height: 1.5;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .product-details p strong {
     color: rgba(255, 255, 255, 0.9);
     font-weight: 600;
     margin-right: 0.5rem;
+}
+
+/* Prevent content overflow in donate-to-ngo cards/forms */
+.donate-to-ngo-section .product-card,
+.donate-to-ngo-section .product-details,
+.donate-to-ngo-section .inline-form,
+.donate-to-ngo-section .inline-form .row {
+    min-width: 0;
+}
+
+.donate-to-ngo-section .product-header h4,
+.donate-to-ngo-section .product-details p,
+.donate-to-ngo-section .inline-form label,
+.donate-to-ngo-section .inline-form textarea,
+.donate-to-ngo-section .inline-form input,
+.donate-to-ngo-section .inline-form select {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.donate-to-ngo-section .inline-form textarea {
+    max-width: 100%;
 }
 
 .type-badge {
@@ -1404,4 +1516,13 @@ button[class=""]:not(.primary):not(.danger):not(.logout-btn):not(.remove-button)
 /* Back button */
 .btn-back {
     margin-bottom: 1rem;
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
 }

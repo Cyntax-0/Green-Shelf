@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import api from "./services/api";
 import "./styles/Profile.css";
 
 const SellerProfile = () => {
-    const [activeTab, setActiveTab] = useState("products");
+    const [activeTab, setActiveTab] = useState("dashboard");
     const { user, token, logout, checkAuthStatus } = useAuth();
     const [profile, setProfile] = useState({
         // Name comes from registration and is immutable like email
@@ -20,10 +20,37 @@ const SellerProfile = () => {
     });
 
     const [products, setProducts] = useState([]);
-
-    const [sales, setSales] = useState([]);
+    const [pastListings, setPastListings] = useState([]);
 
     const navigate = useNavigate();
+
+    const refreshListings = useCallback(async () => {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            setProducts([]);
+            setPastListings([]);
+            return;
+        }
+        try {
+            const [activeRes, historyRes] = await Promise.all([
+                api.products.getMyListings(authToken),
+                api.products.getMyListingsHistory(authToken)
+            ]);
+            if (activeRes.success) {
+                setProducts(activeRes.data.products || []);
+            } else {
+                setProducts([]);
+            }
+            if (historyRes.success) {
+                setPastListings(historyRes.data.products || []);
+            } else {
+                setPastListings([]);
+            }
+        } catch {
+            setProducts([]);
+            setPastListings([]);
+        }
+    }, []);
 
     const [banner, setBanner] = useState(null);
     const [newProductOpen, setNewProductOpen] = useState(false);
@@ -51,6 +78,8 @@ const SellerProfile = () => {
     const [selectedNGO, setSelectedNGO] = useState(null);
     const [directDonationForm, setDirectDonationForm] = useState({
         itemName: '',
+        imageUrl: '',
+        imageFile: null,
         quantity: 1,
         quantityUnit: 'units',
         category: 'Fruits',
@@ -59,30 +88,22 @@ const SellerProfile = () => {
         notes: ''
     });
 
+    const onSelectDirectDonationImage = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            const base64 = reader.result;
+            setDirectDonationForm((prev) => ({ ...prev, imageFile: file, imageUrl: base64 }));
+        };
+        reader.readAsDataURL(file);
+    };
+
     const handleNavigateHome = () => navigate("/home");
 
-    // Fetch products from database on component mount
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const token = localStorage.getItem('authToken');
-                
-                if (token && user?._id) {
-                    const response = await api.products.getBySeller(user._id);
-                    if (response.success) {
-                        setProducts(response.data.products || []);
-                    } else {
-                        setProducts([]);
-                    }
-                } else {
-                    setProducts([]);
-                }
-            } catch (error) {
-                setProducts([]);
-            }
-        };
-        fetchProducts();
-    }, [user]);
+        refreshListings();
+    }, [user?._id, refreshListings]);
 
     // Fetch verified NGOs when donate-to-ngo tab is active
     useEffect(() => {
@@ -202,12 +223,7 @@ const SellerProfile = () => {
             const response = await api.products.create(productData, token);
             
             if (response.success) {
-                // Add to local state for immediate display
-                const savedProduct = {
-                    id: response.data._id,
-                    ...productData
-                };
-                setProducts([...products, savedProduct]);
+                await refreshListings();
                 
                 setBanner({ type: 'success', text: newProduct.isDonate ? 'Donation item added successfully!' : 'Product added successfully!' });
                 
@@ -242,7 +258,8 @@ const SellerProfile = () => {
     };
 
     const saveDiscount = () => {
-        setProducts(products.map(p => p.id === discountEditId ? { ...p, currentDiscount: Number(discountValue) } : p));
+        const idStr = discountEditId != null ? String(discountEditId) : '';
+        setProducts(products.map(p => String(p._id || p.id) === idStr ? { ...p, currentDiscount: Number(discountValue) } : p));
         setDiscountEditId(null);
         setDiscountValue(0);
         setBanner({ type: 'success', text: 'Discount updated.' });
@@ -258,7 +275,9 @@ const SellerProfile = () => {
         } catch (e) {
             // ignore API error, still remove locally
         } finally {
-            setProducts(products.filter(p => (p._id || p.id) !== (product._id || product.id)));
+            const id = product._id || product.id;
+            setProducts(products.filter(p => (p._id || p.id) !== id));
+            refreshListings();
             setBanner({ type: 'success', text: 'Product removed.' });
             setTimeout(() => setBanner(null), 1500);
         }
@@ -274,9 +293,7 @@ const SellerProfile = () => {
                     type: 'success', 
                     text: `Updated prices for ${response.data.length} products based on expiry dates.` 
                 });
-                
-                // Refresh products to show updated prices
-                // In a real app, you'd fetch the updated products from the server
+                await refreshListings();
                 setTimeout(() => setBanner(null), 3000);
             } else {
                 setBanner({ type: 'error', text: 'Failed to update prices.' });
@@ -310,12 +327,33 @@ const SellerProfile = () => {
     };
 
     const displayName = user?.profile?.firstName || user?.username || (user?.email ? user.email.split('@')[0] : 'Seller');
+    const sales = pastListings
+        .filter((product) => product.type === 'sell' || product.type === 'donate')
+        .map((product) => ({
+            id: product._id || product.id,
+            product: product.name,
+            quantity: product.quantity || 1,
+            type: product.type === 'donate' ? 'donation' : 'sale',
+            amount: product.type === 'donate' ? 0 : Number(product.price || product.originalPrice || 0),
+            ngo: product.type === 'donate'
+                ? (String(product.seller?._id || product.seller) === String(user?._id)
+                    ? 'Public donation listing'
+                    : (product.seller?.profile?.organizationName || product.seller?.username || 'NGO'))
+                : '',
+            customer: product.type === 'sell' ? 'Marketplace' : '',
+            date: product.updatedAt
+                ? new Date(product.updatedAt).toLocaleString()
+                : (product.createdAt ? new Date(product.createdAt).toLocaleString() : ''),
+            status: product.status || ''
+        }))
+        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
     return (
         <div className="profile-page">
             <header className="profile-header">
                 <div className="logo" onClick={handleNavigateHome}>GreenShelf</div>
                 <nav className="profile-tabs">
+                    <button className={activeTab === "dashboard" ? "active" : ""} onClick={() => setActiveTab("dashboard")}>Dashboard</button>
                     <button className={activeTab === "products" ? "active" : ""} onClick={() => setActiveTab("products")}>Products</button>
                     <button className={activeTab === "sales" ? "active" : ""} onClick={() => setActiveTab("sales")}>Sales & Donations</button>
                     <button className={activeTab === "donate-to-ngo" ? "active" : ""} onClick={() => setActiveTab("donate-to-ngo")}>Donate to NGO</button>
@@ -330,6 +368,49 @@ const SellerProfile = () => {
 
             <main className="profile-main">
                 {banner && <div className={`banner ${banner.type}`}>{banner.text}</div>}
+                {activeTab === "dashboard" && (
+                    <div className="dashboard-section card">
+                        <h2>Your listings</h2>
+                        <p style={{ color: 'rgba(232, 237, 242, 0.75)', marginBottom: '1rem', maxWidth: '720px' }}>
+                            Everything you list for sale or donation appears here until it is fully sold, completed by an NGO, or its expiry date passes.
+                            Expired listings are removed automatically from the system (and dropped from carts).
+                        </p>
+                        {products.length === 0 ? (
+                            <p>You have no active listings. Add a product under the Products tab.</p>
+                        ) : (
+                            <div className="sales-list" style={{ marginTop: '8px' }}>
+                                {products.map((product) => {
+                                    const pid = product._id || product.id;
+                                    const { finalPrice, daysToExpiry } = calculateDynamicPrice(product);
+                                    const ngoName = product.seller?.profile?.organizationName || product.seller?.username;
+                                    const isDirectNgoDonation =
+                                        product.type === 'donate' &&
+                                        String(product.seller?._id || product.seller) !== String(user?._id);
+                                    return (
+                                        <div key={pid} className="sale-card border">
+                                            <h4>{product.name}</h4>
+                                            <p>Type: <span className={`sale-type ${product.type === 'donate' ? 'donation' : 'sale'}`}>
+                                                {product.type === 'donate' ? 'donation' : 'sale'}
+                                            </span></p>
+                                            <p>Status: {product.status || 'Active'}</p>
+                                            <p>Quantity: {product.quantity} {product.quantityUnit || 'units'}</p>
+                                            <p>Expiry: {product.expiry} ({daysToExpiry > 0 ? `${daysToExpiry} day(s) left` : 'check date'})</p>
+                                            {product.type === 'sell' && (
+                                                <p>Price: ${finalPrice}</p>
+                                            )}
+                                            {product.type === 'donate' && isDirectNgoDonation && (
+                                                <p>Recipient NGO: {ngoName || 'NGO'}</p>
+                                            )}
+                                            {product.type === 'donate' && !isDirectNgoDonation && (
+                                                <p>Listing: public donation (marketplace / NGOs)</p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
                 {activeTab === "products" && (
                     <div className="products-section card">
                         <div className="section-header">
@@ -515,7 +596,7 @@ const SellerProfile = () => {
                                     <button className="primary" onClick={saveNewProduct}>
                                         Save Product
                                     </button>
-                                    <button style={{ marginLeft: 8 }} onClick={() => setNewProductOpen(false)}>
+                                    <button className="secondary" style={{ marginLeft: 8 }} onClick={() => setNewProductOpen(false)}>
                                         Cancel
                                     </button>
                                 </div>
@@ -529,9 +610,10 @@ const SellerProfile = () => {
                             <div className="products-grid">
                                 {products.map(product => {
                                     const { finalPrice, discount, daysToExpiry } = calculateDynamicPrice(product);
-                                    const editing = discountEditId === product.id;
+                                    const pid = product._id || product.id;
+                                    const editing = discountEditId != null && String(discountEditId) === String(pid);
                                     return (
-                                        <div key={product.id} className="product-card border">
+                                        <div key={pid} className="product-card border">
                                             {product.image && (
                                                 <img src={product.image} alt={product.name} style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 6, marginBottom: 8 }} />
                                             )}
@@ -551,8 +633,8 @@ const SellerProfile = () => {
                                                             editing ? (
                                                                 <>
                                                                     <input style={{ width: 80 }} type="number" min="0" max="90" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} />
-                                                                    <button style={{ marginLeft: 6 }} onClick={saveDiscount}>Save</button>
-                                                                    <button style={{ marginLeft: 6 }} onClick={() => setDiscountEditId(null)}>Cancel</button>
+                                                                    <button className="primary" style={{ marginLeft: 6 }} onClick={saveDiscount}>Save</button>
+                                                                    <button className="secondary" style={{ marginLeft: 6 }} onClick={() => setDiscountEditId(null)}>Cancel</button>
                                                                 </>
                                                             ) : `${product.currentDiscount || 0}%`
                                                         )}</p>
@@ -566,8 +648,8 @@ const SellerProfile = () => {
                                                 )}
                                             </div>
                                             <div className="product-actions">
-                                                {product.type === 'sell' && <button onClick={() => updateDiscount(product.id)}>Update Discount</button>}
-                                                <button>Edit</button>
+                                                {product.type === 'sell' && <button className="secondary" onClick={() => updateDiscount(pid)}>Update Discount</button>}
+                                                <button className="secondary">Edit</button>
                                                 <button className="danger" onClick={() => removeProduct(product)}>Remove</button>
                                             </div>
                                         </div>
@@ -591,6 +673,7 @@ const SellerProfile = () => {
                                         <p>Type: <span className={`sale-type ${sale.type}`}>{sale.type}</span></p>
                                         <p>Amount: ${sale.amount}</p>
                                         <p>{sale.type === 'sale' ? `Customer: ${sale.customer}` : `NGO: ${sale.ngo}`}</p>
+                                        {sale.status && <p>Status: {sale.status}</p>}
                                         <p>Date: {sale.date}</p>
                                     </div>
                                 ))}
@@ -647,6 +730,17 @@ const SellerProfile = () => {
                                                 onChange={(e) => setDirectDonationForm({ ...directDonationForm, itemName: e.target.value })}
                                             />
                                         </div>
+                                        <div className="row">
+                                            <label>Item Image (Optional)</label>
+                                            <input type="file" accept="image/*" onChange={onSelectDirectDonationImage} />
+                                        </div>
+                                        {directDonationForm.imageUrl && (
+                                            <img
+                                                src={directDonationForm.imageUrl}
+                                                alt="donation preview"
+                                                style={{ width: 180, height: 120, objectFit: "cover", borderRadius: 6 }}
+                                            />
+                                        )}
                                         <div className="row">
                                             <label>Food Type</label>
                                             <select
@@ -737,7 +831,7 @@ const SellerProfile = () => {
                                                         }
                                                         const productData = {
                                                             name: directDonationForm.itemName,
-                                                            image: "https://via.placeholder.com/300x200?text=Donation",
+                                                            image: directDonationForm.imageUrl || "https://via.placeholder.com/300x200?text=Donation",
                                                             type: 'donate',
                                                             foodType: directDonationForm.foodType,
                                                             category: directDonationForm.category,
@@ -755,6 +849,8 @@ const SellerProfile = () => {
                                                             setBanner({ type: 'success', text: `Donation to ${selectedNGO.name} created successfully!` });
                                                             setDirectDonationForm({
                                                                 itemName: '',
+                                                                imageUrl: '',
+                                                                imageFile: null,
                                                                 quantity: 1,
                                                                 quantityUnit: 'units',
                                                                 category: 'Fruits',
@@ -763,11 +859,7 @@ const SellerProfile = () => {
                                                                 notes: ''
                                                             });
                                                             setSelectedNGO(null);
-                                                            // Refresh products list
-                                                            const refreshResponse = await api.products.getBySeller(user._id);
-                                                            if (refreshResponse.success) {
-                                                                setProducts(refreshResponse.data.products || []);
-                                                            }
+                                                            await refreshListings();
                                                         } else {
                                                             setBanner({ type: 'error', text: 'Failed to create donation' });
                                                         }
@@ -780,7 +872,7 @@ const SellerProfile = () => {
                                             >
                                                 Submit Donation
                                             </button>
-                                            <button style={{ marginLeft: '8px' }} onClick={() => setSelectedNGO(null)}>Cancel</button>
+                                            <button className="secondary" style={{ marginLeft: '8px' }} onClick={() => setSelectedNGO(null)}>Cancel</button>
                                         </div>
                                     </div>
                                 </div>
@@ -807,7 +899,7 @@ const SellerProfile = () => {
                             </div>
                             <div className="metric-card border">
                                 <h3>Total Donations</h3>
-                                <p>{sales.filter(s => s.type === 'donation').length} items</p>
+                                <p>{pastListings.filter(p => p.type === 'donate').length} completed</p>
                             </div>
                         </div>
                     </div>

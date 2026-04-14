@@ -75,6 +75,11 @@ const productSchema = new mongoose.Schema({
     enum: ['Active', 'Inactive', 'Sold', 'Pending'],
     default: 'Active'
   },
+  donationDecision: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: 'pending'
+  },
   uploader: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

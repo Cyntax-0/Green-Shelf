@@ -3,17 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import api from './services/api';
 import './styles/Profile.css';
+import './styles/Checkout.css';
 
 const Checkout = () => {
     const navigate = useNavigate();
-    const { user, token } = useAuth();
+    const { user, token, checkAuthStatus } = useAuth();
     const [selectedAddress, setSelectedAddress] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [orderNotes, setOrderNotes] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
+    const [createdOrderId, setCreatedOrderId] = useState('');
+    const [pendingRatings, setPendingRatings] = useState([]);
+    const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cartStore, setCartStore] = useState('');
+    const [savedAddresses, setSavedAddresses] = useState([]);
+    const [addressFormOpen, setAddressFormOpen] = useState(false);
+    const [addressForm, setAddressForm] = useState({
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: ''
+    });
     
     useEffect(() => {
         const fetchCart = async () => {
@@ -39,7 +52,7 @@ const Checkout = () => {
                             const productId = typeof product === 'string' ? product : (product?._id || product?.id || item.product);
                             if (productId) {
                                 try {
-                                    const prodResponse = await api.products.getById(productId);
+                                    const prodResponse = await api.products.getById(productId, token);
                                     if (prodResponse.success && prodResponse.data) {
                                         product = prodResponse.data;
                                     }
@@ -57,7 +70,10 @@ const Checkout = () => {
                             expiry: product?.expiry || '',
                             category: product?.category || '',
                             quantityUnit: product?.quantityUnit || 'units',
-                            type: product?.type || 'sell',
+                            type:
+                                product?.type ||
+                                (typeof item.product === 'object' && item.product?.type) ||
+                                'sell',
                             discountType: product?.discountType || 'percent',
                             currentDiscount: product?.currentDiscount || 0,
                             quantity: item.quantity || 1
@@ -78,6 +94,19 @@ const Checkout = () => {
             fetchCart();
         }
     }, [token]);
+
+    useEffect(() => {
+        if (token) {
+            checkAuthStatus();
+        }
+    }, [token]);
+
+    useEffect(() => {
+        const r = String(user?.role ?? '').trim().toLowerCase();
+        if (user && r === 'admin') {
+            navigate('/admin');
+        }
+    }, [user, navigate]);
     
     const calculateTotal = () => {
         return cartItems.reduce((sum, item) => {
@@ -96,10 +125,14 @@ const Checkout = () => {
             return sum + (finalPrice * (item.quantity || 1));
         }, 0);
     };
+    const isDonationOnlyOrder = cartItems.length > 0 && cartItems.every((item) => item.type === 'donate');
 
     const isProfileComplete = () => {
         const p = user?.profile || {};
-        const hasName = Boolean((p.firstName || '').trim()) && Boolean((p.lastName || '').trim());
+        const role = String(user?.role ?? '').trim().toLowerCase();
+        const hasName = role === 'ngo'
+            ? Boolean((p.organizationName || user?.username || user?.email || '').trim())
+            : Boolean((p.firstName || user?.username || user?.email || '').trim());
         const hasPhone = Boolean((p.phone || '').trim());
         const addr = p.address;
         const hasAddress = Array.isArray(addr)
@@ -108,39 +141,94 @@ const Checkout = () => {
         return hasName && hasPhone && hasAddress;
     };
 
-    const handlePlaceOrder = () => {
+    const handlePlaceOrder = async () => {
+        const role = String(user?.role ?? '').trim().toLowerCase();
+        if (role === 'admin') {
+            alert('Admin accounts cannot place orders.');
+            navigate('/admin');
+            return;
+        }
+        const hasDonationItems = cartItems.some((item) => item.type === 'donate');
+        if ((role === 'customer' || role === 'seller') && hasDonationItems) {
+            alert('Only NGO accounts can order donation items. Remove donation items from your cart.');
+            navigate('/home');
+            return;
+        }
+        if (role === 'ngo' && hasDonationItems && !user?.profile?.verified) {
+            alert('Only verified NGO accounts can place orders for donation items.');
+            navigate('/ngo');
+            return;
+        }
         if (!isProfileComplete()) {
-            alert('Please complete your profile (name, phone, address) before placing an order.');
-            navigate('/customer');
+            alert('Please complete your profile (name/organization, phone, address) before placing an order.');
+            navigate(role === 'ngo' ? '/ngo' : '/customer');
             return;
         }
         if (!selectedAddress) {
             alert('Please select a delivery address');
             return;
         }
-        
-        const orderData = {
-            items: cartItems,
-            store: cartStore,
-            total: calculateTotal(),
-            address: selectedAddress,
-            paymentMethod,
-            orderNotes,
-            date: new Date().toISOString()
-        };
-        
+
         try {
-            const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-            localStorage.setItem('orders', JSON.stringify([{ id: Date.now(), ...orderData }, ...existingOrders]));
+            setIsSubmittingOrder(true);
+            const profileAddress = user?.profile?.address || {};
+            const shippingAddress = {
+                firstName: user?.profile?.firstName || user?.profile?.organizationName || user?.username || 'User',
+                lastName: user?.profile?.lastName || '-',
+                street: selectedAddress || profileAddress?.street || '',
+                city: profileAddress?.city || '',
+                state: profileAddress?.state || '',
+                zipCode: profileAddress?.zipCode || '',
+                country: profileAddress?.country || '',
+                phone: user?.profile?.phone || ''
+            };
+
+            const response = await api.orders.create(token, {
+                shippingAddress,
+                billingAddress: shippingAddress,
+                paymentMethod,
+                shippingMethod: 'standard',
+                selectedAddress,
+                orderNotes
+            });
+
+            const createdOrder = response?.data?.order;
+            if (!response?.success || !createdOrder?._id) {
+                throw new Error('Failed to place order.');
+            }
+
+            setCreatedOrderId(createdOrder._id);
+            const sellers = response?.data?.sellerSummaries || [];
+            setPendingRatings(
+                sellers.map((seller) => ({
+                    sellerId: seller.sellerId,
+                    sellerName: seller.sellerName,
+                    rating: 5,
+                    comment: ''
+                }))
+            );
+
             localStorage.removeItem('cartItems');
             localStorage.removeItem('cartStore');
+            setCartItems([]);
             setShowSuccess(true);
-            setTimeout(() => {
-                navigate('/home');
-            }, 2000);
         } catch (error) {
-            alert('Error placing order. Please try again.');
+            alert(error?.message || 'Error placing order. Please try again.');
+        } finally {
+            setIsSubmittingOrder(false);
         }
+    };
+
+    const submitSellerRating = async (sellerRating) => {
+        if (!createdOrderId || !token) return;
+        await api.orders.rateShop(
+            createdOrderId,
+            sellerRating.sellerId,
+            Number(sellerRating.rating),
+            sellerRating.comment,
+            token
+        );
+        setPendingRatings((prev) => prev.filter((item) => item.sellerId !== sellerRating.sellerId));
     };
 
     const formatAddress = (addr) => {
@@ -162,16 +250,54 @@ const Checkout = () => {
             : [formatAddress(user.profile.address)])
         : [];
 
+    useEffect(() => {
+        const stored = localStorage.getItem(`checkoutAddresses:${user?._id || 'guest'}`);
+        const parsed = stored ? JSON.parse(stored) : [];
+        const merged = [...new Set([...addresses.filter(Boolean), ...parsed.filter(Boolean)])];
+        setSavedAddresses(merged);
+        if (!selectedAddress && merged.length > 0) {
+            setSelectedAddress(merged[0]);
+        }
+    }, [user?._id, user?.profile?.address]);
+
+    useEffect(() => {
+        if (isDonationOnlyOrder) {
+            setPaymentMethod('cash');
+        }
+    }, [isDonationOnlyOrder]);
+
+    const addNewAddress = async () => {
+        const { street, city, state, zipCode, country } = addressForm;
+        if (!street || !city || !state || !zipCode || !country) {
+            alert('Please fill all address fields.');
+            return;
+        }
+        const formatted = formatAddress(addressForm);
+        const next = [...new Set([formatted, ...savedAddresses])];
+        setSavedAddresses(next);
+        setSelectedAddress(formatted);
+        localStorage.setItem(`checkoutAddresses:${user?._id || 'guest'}`, JSON.stringify(next));
+        try {
+            if (token) {
+                await api.auth.updateProfile(token, {
+                    profile: { address: { ...addressForm } }
+                });
+            }
+        } catch (_e) {}
+        setAddressForm({ street: '', city: '', state: '', zipCode: '', country: '' });
+        setAddressFormOpen(false);
+    };
+
     return (
-        <div className="profile-page">
+        <div className="profile-page checkout-page">
             <header className="profile-header">
                 <div className="logo" onClick={() => navigate('/home')}>GreenShelf</div>
                 <nav className="profile-tabs">
-                    <button onClick={() => navigate('/home')}>Continue Shopping</button>
+                    <button className="secondary" onClick={() => navigate('/home')}>Continue Shopping</button>
                 </nav>
             </header>
 
-            <main className="profile-main">
+            <main className="profile-main checkout-main">
                 <h2>Checkout</h2>
                 {loading ? (
                     <div>
@@ -183,41 +309,58 @@ const Checkout = () => {
                         <button className="primary" onClick={() => navigate('/home')}>Continue Shopping</button>
                     </div>
                 ) : (
-                    <div className="orders-list" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                        <div className="card">
+                    <div className="checkout-content">
+                        <div className="order-summary">
                             <h3>Order Summary</h3>
                             <p><strong>Store:</strong> {cartStore}</p>
                             
-                            <div className="info-field">
-                                <label><strong>Delivery Address:</strong></label>
+                            <div className="form-field">
+                                <label>Delivery Address</label>
                                 <select value={selectedAddress} onChange={(e) => setSelectedAddress(e.target.value)}>
                                     <option value="">Select an address</option>
-                                    {addresses.map((addr, idx) => (
+                                    {savedAddresses.map((addr, idx) => (
                                         <option key={idx} value={addr}>{addr}</option>
                                     ))}
                                 </select>
+                                <button className="secondary" onClick={() => setAddressFormOpen((v) => !v)}>
+                                    {addressFormOpen ? 'Cancel New Address' : '+ Add New Address'}
+                                </button>
                             </div>
 
-                            <div className="info-field">
-                                <label><strong>Payment Method:</strong></label>
-                                <div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                        <input type="radio" name="payment" value="cash" checked={paymentMethod === 'cash'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                                        Cash on Delivery
-                                    </label>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                        <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                                        Credit/Debit Card
-                                    </label>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <input type="radio" name="payment" value="upi" checked={paymentMethod === 'upi'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                                        UPI
-                                    </label>
+                            {addressFormOpen && (
+                                <div className="form-field">
+                                    <label>New Address</label>
+                                    <input placeholder="Street" value={addressForm.street} onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })} />
+                                    <input placeholder="City" value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} />
+                                    <input placeholder="State" value={addressForm.state} onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })} />
+                                    <input placeholder="ZIP Code" value={addressForm.zipCode} onChange={(e) => setAddressForm({ ...addressForm, zipCode: e.target.value })} />
+                                    <input placeholder="Country" value={addressForm.country} onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })} />
+                                    <button className="primary" onClick={addNewAddress}>Save Address</button>
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="info-field">
-                                <label><strong>Order Notes (Optional):</strong></label>
+                            {!isDonationOnlyOrder ? (
+                                <div className="form-field">
+                                    <label>Payment Method</label>
+                                    <div className="payment-options">
+                                        <label>
+                                            <input type="radio" name="payment" value="cash" checked={paymentMethod === 'cash'} onChange={(e) => setPaymentMethod(e.target.value)} />
+                                            Cash on Delivery
+                                        </label>
+                                        <label>
+                                            <input type="radio" name="payment" value="upi" checked={paymentMethod === 'upi'} onChange={(e) => setPaymentMethod(e.target.value)} />
+                                            UPI on Delivery
+                                        </label>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="success-banner">
+                                    Donation-only order: payment is not required.
+                                </div>
+                            )}
+
+                            <div className="form-field">
+                                <label>Order Notes (Optional)</label>
                                 <textarea value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} placeholder="Any special instructions?" />
                             </div>
 
@@ -240,25 +383,80 @@ const Checkout = () => {
                                     );
                                 })}
                             </div>
-                            <div className="cart-total">
+                            <div className="total-section">
                                 <strong>Total: ${calculateTotal().toFixed(2)}</strong>
                             </div>
 
                             {showSuccess && (
-                                <div className="banner success">Order Placed Successfully. Redirecting...</div>
+                                <div className="banner success">
+                                    Order placed successfully. Please rate the shop to help authenticity.
+                                </div>
                             )}
 
-                            <div className="inline-form" style={{ display: 'flex', gap: '12px', background: 'transparent', border: 'none', padding: 0, marginTop: '1rem' }}>
-                                <button className="primary" onClick={handlePlaceOrder} disabled={showSuccess}>
+                            {showSuccess && pendingRatings.length > 0 && (
+                                <div className="card" style={{ marginTop: '1rem' }}>
+                                    <h3>Rate Your Purchase</h3>
+                                    {pendingRatings.map((sellerRating) => (
+                                        <div key={sellerRating.sellerId} className="info-field" style={{ marginBottom: '0.75rem' }}>
+                                            <label>{sellerRating.sellerName}</label>
+                                            <select
+                                                value={sellerRating.rating}
+                                                onChange={(e) =>
+                                                    setPendingRatings((prev) =>
+                                                        prev.map((item) =>
+                                                            item.sellerId === sellerRating.sellerId
+                                                                ? { ...item, rating: Number(e.target.value) }
+                                                                : item
+                                                        )
+                                                    )
+                                                }
+                                            >
+                                                <option value={5}>5 - Excellent</option>
+                                                <option value={4}>4 - Good</option>
+                                                <option value={3}>3 - Average</option>
+                                                <option value={2}>2 - Poor</option>
+                                                <option value={1}>1 - Very Poor</option>
+                                            </select>
+                                            <textarea
+                                                placeholder="Optional feedback"
+                                                value={sellerRating.comment}
+                                                onChange={(e) =>
+                                                    setPendingRatings((prev) =>
+                                                        prev.map((item) =>
+                                                            item.sellerId === sellerRating.sellerId
+                                                                ? { ...item, comment: e.target.value }
+                                                                : item
+                                                        )
+                                                    )
+                                                }
+                                            />
+                                            <button className="primary" onClick={() => submitSellerRating(sellerRating)}>
+                                                Submit Rating
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {showSuccess && pendingRatings.length === 0 && (
+                                <div className="inline-form" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+                                    <button className="primary" onClick={() => navigate('/home')}>
+                                        Back to Home
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="checkout-actions">
+                                <button className="primary" onClick={handlePlaceOrder} disabled={showSuccess || isSubmittingOrder}>
                                     Place Order
                                 </button>
-                                <button onClick={() => navigate('/home')} disabled={showSuccess}>
+                                <button className="secondary" onClick={() => navigate('/home')} disabled={showSuccess || isSubmittingOrder}>
                                     Cancel
                                 </button>
                             </div>
                         </div>
 
-                        <div className="card">
+                        <div className="order-details">
                             <h3>Order Details</h3>
                             {cartItems.map((item, index) => {
                                 const daysToExpiry = Math.ceil((new Date(item.expiry) - new Date()) / (1000 * 60 * 60 * 24));
@@ -274,9 +472,9 @@ const Checkout = () => {
                                         <div key={index} className="info-field">
                                             <label style={{ marginBottom: '8px' }}>{item.name || 'Unknown Product'}</label>
                                             <p>Quantity: {item.quantity || 1}</p>
-                                            <p>Original Price: ${(item.originalPrice || item.price || 0).toFixed(2)}</p>
-                                            <p>Discount: {Math.round(discount * 100)}%</p>
-                                            <p><strong>Price: ${(finalPrice * (item.quantity || 1)).toFixed(2)}</strong></p>
+                                            <p>Original Price: {item.type === 'donate' ? 'FREE' : `$${(item.originalPrice || item.price || 0).toFixed(2)}`}</p>
+                                            <p>Discount: {item.type === 'donate' ? '100%' : `${Math.round(discount * 100)}%`}</p>
+                                            <p><strong>Price: {item.type === 'donate' ? 'FREE' : `$${(finalPrice * (item.quantity || 1)).toFixed(2)}`}</strong></p>
                                         </div>
                                     );
                             })}

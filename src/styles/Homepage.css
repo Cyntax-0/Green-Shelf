@@ -429,6 +429,12 @@
     font-size: 0.6875rem;
 }
 
+.homepage .expiry-warning--expired {
+    color: #fecaca;
+    background: rgba(185, 28, 28, 0.35);
+    border-color: rgba(252, 165, 165, 0.5);
+}
+
 @keyframes pulse {
 
     0%,

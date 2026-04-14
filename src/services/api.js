@@ -83,8 +83,9 @@ export const api = {
       });
     },
 
-    async getById(id) {
-      return api.request(`/products/${id}`);
+    async getById(id, token = null) {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      return api.request(`/products/${id}`, { method: 'GET', headers });
     },
 
     async create(productData, token) {
@@ -114,6 +115,20 @@ export const api = {
       return api.request(`/products/seller/${sellerId}`);
     },
 
+    async getMyListings(token) {
+      return api.request('/products/my-listings', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+
+    async getMyListingsHistory(token) {
+      return api.request('/products/my-listings/history', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+
     async updatePrices(daysThreshold = null) {
       const params = daysThreshold ? `?daysThreshold=${daysThreshold}` : '';
       return api.request(`/products/update-prices${params}`, {
@@ -128,6 +143,21 @@ export const api = {
     async getMyDonations(token) {
       return api.request('/products/my-donations/list', {
         method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+
+    async getMyReceivedDonations(token) {
+      return api.request('/products/my-received-donations/list', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+
+    async decideDonation(id, decision, token) {
+      return api.request(`/products/${id}/donation-decision`, {
+        method: 'PUT',
+        body: { decision },
         headers: { Authorization: `Bearer ${token}` },
       });
     },
@@ -167,6 +197,23 @@ export const api = {
         headers: { Authorization: `Bearer ${token}` },
       });
     },
+  },
+
+  orders: {
+    async create(token, payload) {
+      return api.request('/orders/create', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: payload
+      });
+    },
+    async rateShop(orderId, sellerId, rating, comment, token) {
+      return api.request(`/orders/${orderId}/rate-shop`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: { sellerId, rating, comment }
+      });
+    }
   },
 };
 

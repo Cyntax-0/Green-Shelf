@@ -32,9 +32,11 @@ router.get('/ngos/verified', async (req, res) => {
   try {
     const ngos = await User.find({ 
       role: 'ngo', 
-      'profile.verified': true,
-      'location.latitude': { $exists: true, $ne: null },
-      'location.longitude': { $exists: true, $ne: null }
+      $or: [
+        { 'profile.verified': true },
+        { 'profile.verifiedAt': { $exists: true, $ne: null } },
+        { 'profile.adminHistory.action': 'approved' }
+      ]
     })
       .select('username email profile.firstName profile.lastName profile.phone profile.address location createdAt')
       .sort({ createdAt: -1 });

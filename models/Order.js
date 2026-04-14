@@ -6,6 +6,11 @@ const orderItemSchema = new mongoose.Schema({
     ref: 'Product',
     required: true
   },
+  seller: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   quantity: {
     type: Number,
     required: true,
@@ -121,7 +126,7 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['credit_card', 'debit_card', 'paypal', 'bank_transfer', 'cash_on_delivery'],
+    enum: ['cash_on_delivery', 'upi_on_delivery'],
     required: true
   },
   paymentDetails: {
@@ -138,6 +143,33 @@ const orderSchema = new mongoose.Schema({
   actualDelivery: Date,
   notes: String,
   sellerNotes: String,
+  sellerRatings: [{
+    seller: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: true
+    },
+    comment: {
+      type: String,
+      trim: true,
+      maxlength: 300
+    },
+    ratedByRole: {
+      type: String,
+      enum: ['customer', 'ngo', 'seller', 'admin'],
+      required: true
+    },
+    ratedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   refundReason: String,
   refundAmount: Number,
   refundedAt: Date

@@ -49,6 +49,20 @@ const userSchema = new mongoose.Schema({
     verificationSubmittedAt: Date,
     rejectionReason: String,
     organizationName: String,
+    shopRating: {
+      average: { type: Number, default: 0 },
+      count: { type: Number, default: 0 }
+    },
+    shopRatingEntries: [
+      {
+        orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+        ratedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        ratedByRole: { type: String, enum: ['customer', 'ngo', 'seller', 'admin'] },
+        rating: { type: Number, min: 1, max: 5 },
+        comment: { type: String, trim: true, maxlength: 300 },
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
     // Admin history for tracking approvals/rejections
     adminHistory: [{
       action: { type: String, enum: ['approved', 'rejected'] },

@@ -35,6 +35,7 @@ const NGOProfile = () => {
 
     const [partners, setPartners] = useState([]);
     const [messages, setMessages] = useState([]);
+    const [processingDonationId, setProcessingDonationId] = useState(null);
 
     useEffect(() => {
         const partnerMap = {};
@@ -46,9 +47,70 @@ const NGOProfile = () => {
         setPartners(Object.values(partnerMap));
     }, [receivedDonations]);
 
+    // Load donations received by this NGO (includes donor contact details)
+    useEffect(() => {
+        const loadReceivedDonations = async () => {
+            if (activeTab !== "donations") return;
+            try {
+                const token = localStorage.getItem("authToken");
+                if (!token) return;
+                const response = await api.products.getMyReceivedDonations(token);
+                if (response.success && response.data?.products) {
+                    const mapped = response.data.products.map((p) => {
+                        const uploader = p.uploader || {};
+                        const rawAddress = uploader.profile?.address || uploader.location || {};
+                        const normalizedAddress = typeof rawAddress === "string"
+                            ? { street: rawAddress }
+                            : {
+                                street: rawAddress?.street || rawAddress?.address || "",
+                                city: rawAddress?.city || "",
+                                state: rawAddress?.state || "",
+                                zipCode: rawAddress?.zipCode || "",
+                                country: rawAddress?.country || ""
+                            };
+                        const donorName =
+                            uploader.profile?.firstName ||
+                            uploader.username ||
+                            uploader.email ||
+                            "Unknown donor";
+                        return {
+                            id: p._id || p.id,
+                            itemName: p.name,
+                            image: p.image || "",
+                            quantity: p.quantity || 0,
+                            quantityUnit: p.quantityUnit || "units",
+                            expiry: p.expiry || "",
+                            date: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
+                            seller: donorName,
+                            donor: {
+                                name: donorName,
+                                email: uploader.email || "",
+                                phone: uploader.profile?.phone || "",
+                                address: normalizedAddress
+                            }
+                        };
+                    });
+                    setReceivedDonations(mapped);
+                } else {
+                    setReceivedDonations([]);
+                }
+            } catch (error) {
+                console.error("Error loading received donations:", error);
+                setReceivedDonations([]);
+            }
+        };
+        loadReceivedDonations();
+    }, [activeTab]);
+
     const navigate = useNavigate();
     const handleNavigateHome = () => navigate("/home");
-    const displayName = user?.profile?.firstName || user?.username || (user?.email ? user.email.split('@')[0] : 'NGO');
+    const displayName =
+        user?.profile?.organizationName ||
+        user?.profile?.firstName ||
+        user?.username ||
+        (user?.email ? user.email.split('@')[0] : 'NGO');
+
+    const verificationLockedTabs = ['dashboard', 'donations', 'partners'];
 
     const handleVerificationDocument = (e) => {
         const file = e.target.files?.[0];
@@ -177,6 +239,33 @@ const NGOProfile = () => {
         }
     };
 
+    const handleDonationDecision = async (donationId, decision) => {
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+                setBanner({ type: "error", text: "Authentication required" });
+                setTimeout(() => setBanner(null), 2500);
+                return;
+            }
+            setProcessingDonationId(donationId);
+            const response = await api.products.decideDonation(donationId, decision, token);
+            if (response.success) {
+                setReceivedDonations((prev) => prev.filter((d) => d.id !== donationId));
+                setBanner({
+                    type: "success",
+                    text: decision === "accepted" ? "Donation accepted." : "Donation rejected."
+                });
+            } else {
+                setBanner({ type: "error", text: "Failed to update donation decision." });
+            }
+        } catch (error) {
+            setBanner({ type: "error", text: error.message || "Failed to update donation decision." });
+        } finally {
+            setProcessingDonationId(null);
+            setTimeout(() => setBanner(null), 2500);
+        }
+    };
+
     return (
         <div className="profile-page">
             <header className="profile-header">
@@ -198,11 +287,18 @@ const NGOProfile = () => {
 
             <main className="profile-main">
                 {banner && <div className={`banner ${banner.type}`}>{banner.text}</div>}
-                {!verificationStatus.verified && activeTab !== "profile" && (
+                {!verificationStatus.verified && verificationLockedTabs.includes(activeTab) && (
                     <div className="card verification-required-banner">
                         <h3>Verification Required</h3>
-                        <p>You must verify your NGO identity before accessing this feature.</p>
+                        <p>
+                            Verify your NGO to manage incoming donations, partnerships, and the dashboard.
+                            You can still shop for <strong>priced items</strong> from the marketplace and use{' '}
+                            <strong>Purchases</strong> below anytime.
+                        </p>
                         <button className="primary" onClick={() => setActiveTab("profile")}>Go to Profile</button>
+                        <button type="button" className="secondary" style={{ marginLeft: '8px' }} onClick={handleNavigateHome}>
+                            Browse marketplace
+                        </button>
                     </div>
                 )}
                 {verificationStatus.verified && activeTab !== "profile" && (
@@ -337,6 +433,24 @@ const NGOProfile = () => {
                     </div>
                 )}
 
+                {activeTab === "purchases" && (
+                    <div className="card">
+                        <h2>Purchases</h2>
+                        <p>
+                            Order <strong>priced (for-sale)</strong> food from the home page anytime.
+                            To add <strong>donation</strong> listings to your cart and check them out, your NGO must be verified by an admin.
+                        </p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                            <button type="button" className="primary" onClick={handleNavigateHome}>
+                                Go to marketplace
+                            </button>
+                            <button type="button" className="secondary" onClick={() => navigate('/checkout')}>
+                                Go to checkout
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === "messages" && (
                     <div className="messages-section card">
                         <h2>Messages / Notifications</h2>
@@ -346,9 +460,69 @@ const NGOProfile = () => {
                         messages.map(msg => (
                             <div key={msg.id} className={`message-item ${msg.read ? "read" : "unread"}`}>
                                 {msg.message}
-                                <button onClick={() => setMessages(messages.map(m => m.id === msg.id ? {...m, read: true} : m))}>Mark as Read</button>
+                                <button className="secondary" onClick={() => setMessages(messages.map(m => m.id === msg.id ? {...m, read: true} : m))}>Mark as Read</button>
                             </div>
                         ))
+                        )}
+                    </div>
+                )}
+
+                {activeTab === "donations" && (
+                    <div className="donations-section card">
+                        <h2>Received Donations</h2>
+                        {receivedDonations.length === 0 ? (
+                            <p>No donations received yet.</p>
+                        ) : (
+                            <div className="donations-list ngo-donations-list">
+                                {receivedDonations.map(donation => (
+                                    <div key={donation.id} className="donation-item ngo-donation-card">
+                                        <h3>{donation.itemName}</h3>
+                                        {donation.image && (
+                                            <img
+                                                src={donation.image}
+                                                alt={donation.itemName}
+                                                className="ngo-donation-image"
+                                            />
+                                        )}
+                                        <div className="ngo-donation-meta">
+                                            <p><strong>Quantity:</strong> {donation.quantity} {donation.quantityUnit}</p>
+                                            <p><strong>Expiry:</strong> {donation.expiry}</p>
+                                            <p><strong>Date:</strong> {donation.date}</p>
+                                        </div>
+                                        <div className="ngo-donor-block">
+                                            <p><strong>Donor:</strong> {donation.donor.name}</p>
+                                            <p><strong>Donor Email:</strong> {donation.donor.email || 'Not provided'}</p>
+                                            <p><strong>Donor Phone:</strong> {donation.donor.phone || 'Not provided'}</p>
+                                            <p>
+                                                <strong>Donor Address:</strong>{" "}
+                                                {[
+                                                    donation.donor.address?.street,
+                                                    donation.donor.address?.city,
+                                                    donation.donor.address?.state,
+                                                    donation.donor.address?.zipCode,
+                                                    donation.donor.address?.country
+                                                ].filter(Boolean).join(", ") || "Not provided"}
+                                            </p>
+                                        </div>
+                                        <div className="ngo-donation-actions">
+                                            <button
+                                                className="primary"
+                                                disabled={processingDonationId === donation.id}
+                                                onClick={() => handleDonationDecision(donation.id, "accepted")}
+                                            >
+                                                Accept
+                                            </button>
+                                            <button
+                                                className="danger"
+                                                disabled={processingDonationId === donation.id}
+                                                onClick={() => handleDonationDecision(donation.id, "rejected")}
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 )}

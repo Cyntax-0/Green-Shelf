@@ -2,6 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import "./styles/Homepage.css";
 import api from './services/api';
+import { productSellerKey, CART_SINGLE_VENDOR_MESSAGE } from '../utils/cartVendor.js';
+
+function mapServerCartLine(ci) {
+    const p = ci.product || {};
+    return {
+        id: p._id || p.id,
+        name: p.name,
+        image: p.image || (p.images && p.images[0]) || '',
+        price: p.price || p.originalPrice || 0,
+        originalPrice: p.originalPrice || p.price || 0,
+        expiry: p.expiry,
+        category: p.category,
+        quantityUnit: p.quantityUnit,
+        type: p.type,
+        discountType: p.discountType,
+        currentDiscount: p.currentDiscount,
+        store: p.store,
+        sellerId: p.seller?._id || p.seller,
+        quantity: ci.quantity || 1
+    };
+}
 
 const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, currentUser }) => {
     const [cart, setCart] = useState([]);
@@ -11,7 +32,7 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('All');
     const [filterLocation, setFilterLocation] = useState('');
-    const [filterProductType, setFilterProductType] = useState('All'); // 'All', 'sell', 'donate'
+    const [filterProductType, setFilterProductType] = useState('All');
     const [message, setMessage] = useState('');
     const [authMessage, setAuthMessage] = useState('');
     const [publicDonations, setPublicDonations] = useState([]);
@@ -54,25 +75,9 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
                 if (!loggedIn || !token) return;
                 const response = await api.cart.get(token);
                 if (response.success && response.data) {
-                    const serverItems = (response.data.items || []).map(ci => {
-                        const p = ci.product || {};
-                        return {
-                            id: p._id || p.id,
-                            name: p.name,
-                            image: p.image || (p.images && p.images[0]) || '',
-                            price: p.price || p.originalPrice || 0,
-                            originalPrice: p.originalPrice || p.price || 0,
-                            expiry: p.expiry,
-                            category: p.category,
-                            quantityUnit: p.quantityUnit,
-                            type: p.type,
-                            discountType: p.discountType,
-                            currentDiscount: p.currentDiscount,
-                            store: p.store,
-                            quantity: ci.quantity || 1
-                        };
-                    });
+                    const serverItems = (response.data.items || []).map(mapServerCartLine);
                     setCart(serverItems);
+                    setCartStore(serverItems.length ? (serverItems[0].store || null) : null);
                 }
             } catch (_) {}
         };
@@ -80,16 +85,17 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loggedIn]);
 
-    // removed auto-refresh on visibility change
-
     // Check if user was redirected from a protected route
     useEffect(() => {
         if (location.state?.from) {
             setAuthMessage('Please log in to access that page.');
-            // Clear the message after 5 seconds
             setTimeout(() => setAuthMessage(''), 5000);
         }
     }, [location.state]);
+
+    const userRole = String(currentUser?.role ?? '').trim().toLowerCase();
+    const displayProductType =
+        userRole !== 'ngo' && filterProductType === 'donate' ? 'All' : filterProductType;
 
     useEffect(() => {
         try {
@@ -111,7 +117,7 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
 
     const handleProfileNavigation = () => {
         if (loggedIn) {
-            const role = (currentUser?.role || 'customer').toLowerCase();
+            const role = String(currentUser?.role || 'customer').trim().toLowerCase();
             const target = role === 'seller' ? '/seller' : role === 'ngo' ? '/ngo' : '/customer';
             navigate(target);
         } else {
@@ -146,33 +152,54 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
         };
     };
 
-    const result = getDiscountedPrice;
-
     const addToCart = async (product) => {
-        const userRole = (currentUser?.role || '').toLowerCase();
+        const addRole = userRole;
 
-        // Prevent unverified NGOs from adding items
-        if (userRole === 'ngo' && !currentUser?.profile?.verified) {
-            setMessage('NGO account not verified yet. Please wait for admin approval.');
-            setTimeout(() => setMessage(''), 3000);
+        if (addRole === 'admin') {
+            setMessage('Admin accounts cannot use the shopping cart.');
+            setTimeout(() => setMessage(''), 4000);
             return;
         }
 
-        // Prevent sellers from adding their own products
+        if ((addRole === 'customer' || addRole === 'seller') && product.type === 'donate') {
+            setMessage('Only NGO accounts can add donation items to the cart.');
+            setTimeout(() => setMessage(''), 4000);
+            return;
+        }
+
+        if (
+            addRole === 'ngo' &&
+            !currentUser?.profile?.verified &&
+            product.type === 'donate'
+        ) {
+            setMessage(
+                'Verified NGO accounts can order donation items. You can still add priced marketplace items to your cart.'
+            );
+            setTimeout(() => setMessage(''), 5000);
+            return;
+        }
+
         const productSellerId = product?.seller?._id || product?.seller;
         const currentUserId = currentUser?._id;
-        if (userRole === 'seller' && currentUserId && productSellerId && String(productSellerId) === String(currentUserId)) {
+        if (addRole === 'seller' && currentUserId && productSellerId && String(productSellerId) === String(currentUserId)) {
             setMessage('You cannot add your own product to the cart.');
             setTimeout(() => setMessage(''), 3000);
             return;
         }
-        if (cartStore && cartStore !== product.store) {
-            setMessage(`You can only buy from one store at a time. Current store: ${cartStore}`);
+
+        const vendorKey = productSellerKey(product);
+        if (!vendorKey) {
+            setMessage('This listing cannot be added (missing seller).');
+            setTimeout(() => setMessage(''), 4000);
             return;
         }
-
-        if (!cartStore) {
-            setCartStore(product.store);
+        if (cart.length > 0) {
+            const firstKey = cart[0].sellerId;
+            if (firstKey && String(firstKey) !== String(vendorKey)) {
+                setMessage(CART_SINGLE_VENDOR_MESSAGE);
+                setTimeout(() => setMessage(''), 6000);
+                return;
+            }
         }
 
         const token = localStorage.getItem('authToken');
@@ -181,25 +208,9 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
             if (loggedIn && token && productId) {
                 const resp = await api.cart.add(token, productId, 1);
                 if (resp.success && resp.data) {
-                    const serverItems = (resp.data.items || []).map(ci => {
-                        const p = ci.product || {};
-                        return {
-                            id: p._id || p.id,
-                            name: p.name,
-                            image: p.image || (p.images && p.images[0]) || '',
-                            price: p.price || p.originalPrice || 0,
-                            originalPrice: p.originalPrice || p.price || 0,
-                            expiry: p.expiry,
-                            category: p.category,
-                            quantityUnit: p.quantityUnit,
-                            type: p.type,
-                            discountType: p.discountType,
-                            currentDiscount: p.currentDiscount,
-                            store: p.store,
-                            quantity: ci.quantity || 1
-                        };
-                    });
+                    const serverItems = (resp.data.items || []).map(mapServerCartLine);
                     setCart(serverItems);
+                    setCartStore(serverItems.length ? (serverItems[0].store || null) : null);
                 }
             } else {
                 const existingItem = cart.find(item => item.id === productId);
@@ -210,7 +221,16 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
                             : item
                     ));
                 } else {
-                    setCart([...cart, { ...product, id: productId, quantity: 1 }]);
+                    setCart([...cart, {
+                        ...product,
+                        id: productId,
+                        quantity: 1,
+                        sellerId: vendorKey,
+                        store: product.store
+                    }]);
+                }
+                if (!cart.length) {
+                    setCartStore(product.store || null);
                 }
             }
             setMessage(`${product.name} added to cart!`);
@@ -230,37 +250,18 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
             if (loggedIn && token && productId) {
                 const resp = await api.cart.remove(token, productId);
                 if (resp.success && resp.data) {
-                    const serverItems = (resp.data.items || []).map(ci => {
-                        const p = ci.product || {};
-                        return {
-                            id: p._id || p.id,
-                            name: p.name,
-                            image: p.image || (p.images && p.images[0]) || '',
-                            price: p.price || p.originalPrice || 0,
-                            originalPrice: p.originalPrice || p.price || 0,
-                            expiry: p.expiry,
-                            category: p.category,
-                            quantityUnit: p.quantityUnit,
-                            type: p.type,
-                            discountType: p.discountType,
-                            currentDiscount: p.currentDiscount,
-                            store: p.store,
-                            quantity: ci.quantity || 1
-                        };
-                    });
+                    const serverItems = (resp.data.items || []).map(mapServerCartLine);
                     setCart(serverItems);
+                    setCartStore(serverItems.length ? (serverItems[0].store || null) : null);
                 }
             } else {
                 const newCart = cart.filter((_, i) => i !== index);
                 setCart(newCart);
+                if (newCart.length === 0) {
+                    setCartStore(null);
+                }
             }
         } catch (_) {
-            // ignore
-        } finally {
-            const newCart = (productId && (loggedIn && token)) ? cart.filter((_, i) => i !== index) : cart;
-            if (newCart.length === 0) {
-                setCartStore(null);
-            }
         }
     };
 
@@ -283,17 +284,23 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
             onNavigateToLogin();
             return;
         }
+        const checkoutRole = String(currentUser?.role ?? '').trim().toLowerCase();
+        if (checkoutRole === 'admin') {
+            setAuthMessage('Admin accounts cannot use checkout.');
+            setTimeout(() => setAuthMessage(''), 5000);
+            return;
+        }
         localStorage.setItem('cartItems', JSON.stringify(cart));
         localStorage.setItem('cartStore', cartStore);
         navigate('/checkout');
     };
 
-    // removed manual refresh function
-
-    const userRole = (currentUser?.role || '').toLowerCase();
-
     const filteredProducts = products.filter(product => {
-        // Non-NGO users must not see donation items on the home page
+        const { daysToExpiry } = getDiscountedPrice(product);
+        if (daysToExpiry <= 0) {
+            return false;
+        }
+
         if (userRole !== 'ngo' && product.type === 'donate') {
             return false;
         }
@@ -324,7 +331,7 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
         }
         
         // Product type filter (sell/donate)
-        const matchesProductType = filterProductType === "All" || product.type === filterProductType;
+        const matchesProductType = displayProductType === 'All' || product.type === displayProductType;
         
         // Location filter (store name, city, state, or address)
         const matchesLocation = filterLocation === "" || (
@@ -382,12 +389,12 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
                 ))}
                 <select
                     className="filter-select"
-                    value={filterProductType}
+                    value={displayProductType}
                     onChange={(e) => setFilterProductType(e.target.value)}
                 >
                     <option value="All">All Types</option>
                     <option value="sell">For Sale</option>
-                    <option value="donate">Donations</option>
+                    {userRole === 'ngo' && <option value="donate">Donations</option>}
                 </select>
                 <input
                     type="text"
@@ -429,17 +436,23 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
                                 )}
                                 <p><strong>Expiry:</strong> {product.expiry}</p>
                                 {daysToExpiry <= 5 && daysToExpiry > 0 && (
-                                    <p className="expiry-warning" style={{color: '#d32f2f', fontWeight: 'bold'}}>
+                                    <p className="expiry-warning">
                                         Expires in {daysToExpiry} day{daysToExpiry !== 1 ? 's' : ''}
                                     </p>
                                 )}
                                 {daysToExpiry <= 0 && (
-                                    <p className="expiry-warning" style={{color: '#d32f2f', fontWeight: 'bold'}}>
+                                    <p className="expiry-warning expiry-warning--expired">
                                         EXPIRED
                                     </p>
                                 )}
                                 {product.seller && (
                                     <p><strong>Seller:</strong> {product.seller.profile?.firstName || product.seller.username || 'Unknown'}</p>
+                                )}
+                                {product.seller?.profile?.shopRating?.count > 0 && (
+                                    <p>
+                                        <strong>Shop Rating:</strong> {Number(product.seller.profile.shopRating.average || 0).toFixed(1)} / 5
+                                        {' '}({product.seller.profile.shopRating.count} ratings)
+                                    </p>
                                 )}
                                 {product.location?.city && (
                                     <p><strong>Location:</strong> {product.location.city}{product.location.state ? `, ${product.location.state}` : ''}</p>
