@@ -1,14 +1,32 @@
 const RAW_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const API_BASE_URL = RAW_BASE_URL.endsWith('/api') ? RAW_BASE_URL : `${RAW_BASE_URL}/api`;
 
+const normalizeToken = (token) => {
+  if (!token) return '';
+  let normalized = String(token).trim().replace(/^"+|"+$/g, '');
+  if (normalized.toLowerCase().startsWith('bearer ')) {
+    normalized = normalized.slice(7).trim();
+  }
+  if (normalized.includes(' ')) {
+    const parts = normalized.split(/\s+/).filter(Boolean);
+    normalized = parts[parts.length - 1] || '';
+  }
+  return normalized;
+};
+
 export const api = {
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
+    const incomingAuth = options.headers?.Authorization;
+    const normalizedAuthToken = incomingAuth
+      ? normalizeToken(incomingAuth)
+      : '';
     const config = {
       ...options,
       headers: {
         'Content-Type': 'application/json',
         ...(options.headers || {}),
+        ...(normalizedAuthToken ? { Authorization: `Bearer ${normalizedAuthToken}` } : {}),
       },
     };
 

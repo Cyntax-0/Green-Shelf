@@ -11,7 +11,23 @@ import {
 import { productSellerKey, CART_SINGLE_VENDOR_MESSAGE } from '../utils/cartVendor.js';
 
 const router = express.Router();
-const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+const getJwtSecret = () => process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+
+const extractToken = (authHeaderValue) => {
+  if (!authHeaderValue) return '';
+  let token = String(authHeaderValue).trim().replace(/^"+|"+$/g, '');
+  if (token.toLowerCase().startsWith('bearer ')) {
+    token = token.slice(7).trim();
+  }
+  if (token.toLowerCase().startsWith('bearer ')) {
+    token = token.slice(7).trim();
+  }
+  if (token.includes(' ')) {
+    const parts = token.split(/\s+/).filter(Boolean);
+    token = parts[parts.length - 1] || '';
+  }
+  return token;
+};
 
 const isProductExpired = (expiry) => {
   if (!expiry) return false;
@@ -21,7 +37,7 @@ const isProductExpired = (expiry) => {
 };
 
 async function requireShoppingUser(req, res) {
-  const token = req.headers.authorization?.split(' ')[1];
+  const token = extractToken(req.headers.authorization || req.headers.Authorization);
   if (!token) {
     res.status(401).json({
       success: false,
@@ -31,13 +47,19 @@ async function requireShoppingUser(req, res) {
   }
   let decoded;
   try {
-    decoded = jwt.verify(token, jwtSecret);
+    decoded = jwt.verify(token, getJwtSecret());
   } catch {
     res.status(401).json({
       success: false,
       message: 'Invalid token'
     });
     return null;
+  }
+  if (!decoded?.userId) {
+    const legacyUserId = decoded?.id || decoded?._id || decoded?.user?.id || decoded?.user?._id;
+    if (legacyUserId) {
+      decoded.userId = legacyUserId;
+    }
   }
   if (!decoded?.userId) {
     res.status(401).json({
@@ -152,10 +174,12 @@ router.post('/add', async (req, res) => {
       });
     }
 
-    if (product.seller && product.seller.toString() === auth.decoded.userId) {
+    const currentUserId = String(auth.decoded.userId);
+    const productUploaderId = product.uploader ? String(product.uploader) : null;
+    if (productUploaderId && productUploaderId === currentUserId) {
       return res.status(403).json({
         success: false,
-        message: 'You cannot add your own product to the cart'
+        message: 'You cannot add your own uploaded product to the cart'
       });
     }
 

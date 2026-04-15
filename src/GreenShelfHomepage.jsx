@@ -38,6 +38,22 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
     const [publicDonations, setPublicDonations] = useState([]);
     const navigate = useNavigate();
     const location = useLocation();
+    const normalizeRole = (role) => {
+        const r = String(role ?? '').trim().toLowerCase();
+        return r === 'user' ? 'customer' : r;
+    };
+    const getAuthToken = () => String(localStorage.getItem('authToken') || '').trim();
+    const syncCartFromServer = async (token) => {
+        const response = await api.cart.get(token);
+        if (response.success && response.data) {
+            const serverItems = (response.data.items || []).map(mapServerCartLine);
+            setCart(serverItems);
+            setCartStore(serverItems.length ? (serverItems[0].store || null) : null);
+        } else {
+            setCart([]);
+            setCartStore(null);
+        }
+    };
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -71,15 +87,13 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
     useEffect(() => {
         const loadServerCart = async () => {
             try {
-                const token = localStorage.getItem('authToken');
+                const token = getAuthToken();
                 if (!loggedIn || !token) return;
-                const response = await api.cart.get(token);
-                if (response.success && response.data) {
-                    const serverItems = (response.data.items || []).map(mapServerCartLine);
-                    setCart(serverItems);
-                    setCartStore(serverItems.length ? (serverItems[0].store || null) : null);
-                }
-            } catch (_) {}
+                await syncCartFromServer(token);
+            } catch (_) {
+                setCart([]);
+                setCartStore(null);
+            }
         };
         loadServerCart();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,7 +107,7 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
         }
     }, [location.state]);
 
-    const userRole = String(currentUser?.role ?? '').trim().toLowerCase();
+    const userRole = normalizeRole(currentUser?.role);
     const displayProductType =
         userRole !== 'ngo' && filterProductType === 'donate' ? 'All' : filterProductType;
 
@@ -180,9 +194,10 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
         }
 
         const productSellerId = product?.seller?._id || product?.seller;
+        const productUploaderId = product?.uploader?._id || product?.uploader;
         const currentUserId = currentUser?._id;
-        if (addRole === 'seller' && currentUserId && productSellerId && String(productSellerId) === String(currentUserId)) {
-            setMessage('You cannot add your own product to the cart.');
+        if (currentUserId && productUploaderId && String(productUploaderId) === String(currentUserId)) {
+            setMessage('You cannot add your own uploaded product to the cart.');
             setTimeout(() => setMessage(''), 3000);
             return;
         }
@@ -202,9 +217,14 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
             }
         }
 
-        const token = localStorage.getItem('authToken');
+        const token = getAuthToken();
         const productId = product._id || product.id;
         try {
+            if (loggedIn && !token) {
+                setAuthMessage('Session expired. Please log in again.');
+                onNavigateToLogin();
+                return;
+            }
             if (loggedIn && token && productId) {
                 const resp = await api.cart.add(token, productId, 1);
                 if (resp.success && resp.data) {
@@ -243,10 +263,15 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
     };
 
     const removeFromCart = async (index) => {
-        const token = localStorage.getItem('authToken');
+        const token = getAuthToken();
         const target = cart[index];
         const productId = target?.id;
         try {
+            if (loggedIn && !token) {
+                setAuthMessage('Session expired. Please log in again.');
+                onNavigateToLogin();
+                return;
+            }
             if (loggedIn && token && productId) {
                 const resp = await api.cart.remove(token, productId);
                 if (resp.success && resp.data) {
@@ -266,8 +291,13 @@ const GreenShelfHomepage = ({ onNavigateToLogin, onAdminLogin, loggedIn, current
     };
 
     const clearCart = async () => {
-        const token = localStorage.getItem('authToken');
+        const token = getAuthToken();
         try {
+            if (loggedIn && !token) {
+                setAuthMessage('Session expired. Please log in again.');
+                onNavigateToLogin();
+                return;
+            }
             if (loggedIn && token) {
                 await api.cart.clear(token);
             }

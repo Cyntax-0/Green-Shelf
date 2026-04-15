@@ -8,11 +8,28 @@ import { validateOrderCartForRole, canRoleShop } from '../utils/marketplaceRules
 import { productSellerKey, CART_SINGLE_VENDOR_MESSAGE } from '../utils/cartVendor.js';
 
 const router = express.Router();
+const getJwtSecret = () => process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
+const extractToken = (authHeaderValue) => {
+  if (!authHeaderValue) return '';
+  let token = String(authHeaderValue).trim().replace(/^"+|"+$/g, '');
+  if (token.toLowerCase().startsWith('bearer ')) {
+    token = token.slice(7).trim();
+  }
+  if (token.includes(' ')) {
+    const parts = token.split(/\s+/).filter(Boolean);
+    token = parts[parts.length - 1] || '';
+  }
+  return token;
+};
+const nonEmpty = (value, fallback) => {
+  const text = String(value ?? '').trim();
+  return text.length > 0 ? text : fallback;
+};
 
 // Create order from cart
 router.post('/create', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = extractToken(req.headers.authorization || req.headers.Authorization);
     
     if (!token) {
       return res.status(401).json({
@@ -21,34 +38,51 @@ router.post('/create', async (req, res) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const user = await User.findById(decoded.userId);
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid user' });
     }
-    if (!user.isProfileComplete()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please complete your profile (name/organization, phone, address) before placing an order'
-      });
-    }
-
     const { shippingAddress, billingAddress, paymentMethod, shippingMethod, selectedAddress, orderNotes } = req.body;
     const profileAddress = user.profile?.address || {};
+    const fallbackStreet = selectedAddress || profileAddress.street || 'N/A';
+    const fallbackCity = profileAddress.city || 'N/A';
+    const fallbackState = profileAddress.state || 'N/A';
+    const fallbackZipCode = profileAddress.zipCode || '000000';
+    const fallbackCountry = profileAddress.country || 'N/A';
     const fallbackShippingAddress = {
       firstName: user.profile?.firstName || user.profile?.organizationName || user.username || 'User',
       lastName: user.profile?.lastName || '-',
-      street: profileAddress.street || selectedAddress || '',
-      city: profileAddress.city || '',
-      state: profileAddress.state || '',
-      zipCode: profileAddress.zipCode || '',
-      country: profileAddress.country || '',
+      street: fallbackStreet,
+      city: fallbackCity,
+      state: fallbackState,
+      zipCode: fallbackZipCode,
+      country: fallbackCountry,
       phone: user.profile?.phone || ''
     };
-    const resolvedShippingAddress = shippingAddress || fallbackShippingAddress;
-    const resolvedBillingAddress = billingAddress || resolvedShippingAddress;
+    const incomingShipping = shippingAddress || {};
+    const resolvedShippingAddress = {
+      firstName: nonEmpty(incomingShipping.firstName, fallbackShippingAddress.firstName),
+      lastName: nonEmpty(incomingShipping.lastName, fallbackShippingAddress.lastName),
+      street: nonEmpty(incomingShipping.street, fallbackShippingAddress.street),
+      city: nonEmpty(incomingShipping.city, fallbackShippingAddress.city),
+      state: nonEmpty(incomingShipping.state, fallbackShippingAddress.state),
+      zipCode: nonEmpty(incomingShipping.zipCode, fallbackShippingAddress.zipCode),
+      country: nonEmpty(incomingShipping.country, fallbackShippingAddress.country),
+      phone: nonEmpty(incomingShipping.phone, fallbackShippingAddress.phone)
+    };
+    const incomingBilling = billingAddress || {};
+    const resolvedBillingAddress = {
+      firstName: nonEmpty(incomingBilling.firstName, resolvedShippingAddress.firstName),
+      lastName: nonEmpty(incomingBilling.lastName, resolvedShippingAddress.lastName),
+      street: nonEmpty(incomingBilling.street, resolvedShippingAddress.street),
+      city: nonEmpty(incomingBilling.city, resolvedShippingAddress.city),
+      state: nonEmpty(incomingBilling.state, resolvedShippingAddress.state),
+      zipCode: nonEmpty(incomingBilling.zipCode, resolvedShippingAddress.zipCode),
+      country: nonEmpty(incomingBilling.country, resolvedShippingAddress.country),
+      phone: nonEmpty(incomingBilling.phone, resolvedShippingAddress.phone)
+    };
     const paymentMethodMap = {
       cash: 'cash_on_delivery',
       upi: 'upi_on_delivery'
@@ -178,7 +212,7 @@ router.post('/create', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Order created successfully',
+      message: 'Order placed successfully',
       data: {
         order,
         sellerSummaries: sellerSummaries.map((seller) => ({
@@ -190,6 +224,13 @@ router.post('/create', async (req, res) => {
     });
   } catch (error) {
     console.error('Create order error:', error);
+    if (error?.name === 'ValidationError') {
+      const firstError = Object.values(error.errors || {})[0];
+      return res.status(400).json({
+        success: false,
+        message: firstError?.message || 'Order details are invalid'
+      });
+    }
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -201,7 +242,7 @@ router.post('/create', async (req, res) => {
 // Get user's orders
 router.get('/', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = extractToken(req.headers.authorization || req.headers.Authorization);
     
     if (!token) {
       return res.status(401).json({
@@ -210,8 +251,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const viewer = await User.findById(decoded.userId).select('role');
     if (!viewer || !canRoleShop(viewer.role)) {
@@ -259,7 +299,7 @@ router.get('/', async (req, res) => {
 // Get single order
 router.get('/:id', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = extractToken(req.headers.authorization || req.headers.Authorization);
     
     if (!token) {
       return res.status(401).json({
@@ -268,8 +308,7 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const order = await Order.findById(req.params.id)
       .populate('items.product', 'name images')
@@ -307,7 +346,7 @@ router.get('/:id', async (req, res) => {
 // Update order status (for sellers/admin)
 router.put('/:id/status', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = extractToken(req.headers.authorization || req.headers.Authorization);
     
     if (!token) {
       return res.status(401).json({
@@ -316,8 +355,7 @@ router.put('/:id/status', async (req, res) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const { status, trackingNumber, notes } = req.body;
 
@@ -359,7 +397,7 @@ router.put('/:id/status', async (req, res) => {
 // Cancel order
 router.put('/:id/cancel', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = extractToken(req.headers.authorization || req.headers.Authorization);
     
     if (!token) {
       return res.status(401).json({
@@ -368,8 +406,7 @@ router.put('/:id/cancel', async (req, res) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const order = await Order.findById(req.params.id);
     
@@ -426,13 +463,12 @@ router.put('/:id/cancel', async (req, res) => {
 // Rate seller/shop after successful purchase
 router.post('/:id/rate-shop', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = extractToken(req.headers.authorization || req.headers.Authorization);
     if (!token) {
       return res.status(401).json({ success: false, message: 'No token provided' });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-for-development';
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, getJwtSecret());
     const { sellerId, rating, comment } = req.body;
     const normalizedRating = Number(rating);
 

@@ -127,20 +127,6 @@ const Checkout = () => {
     };
     const isDonationOnlyOrder = cartItems.length > 0 && cartItems.every((item) => item.type === 'donate');
 
-    const isProfileComplete = () => {
-        const p = user?.profile || {};
-        const role = String(user?.role ?? '').trim().toLowerCase();
-        const hasName = role === 'ngo'
-            ? Boolean((p.organizationName || user?.username || user?.email || '').trim())
-            : Boolean((p.firstName || user?.username || user?.email || '').trim());
-        const hasPhone = Boolean((p.phone || '').trim());
-        const addr = p.address;
-        const hasAddress = Array.isArray(addr)
-            ? addr.some(a => (a || '').trim())
-            : !!(addr && (addr.street || addr.city || addr.state || addr.zipCode || addr.country));
-        return hasName && hasPhone && hasAddress;
-    };
-
     const handlePlaceOrder = async () => {
         const role = String(user?.role ?? '').trim().toLowerCase();
         if (role === 'admin') {
@@ -159,27 +145,17 @@ const Checkout = () => {
             navigate('/ngo');
             return;
         }
-        if (!isProfileComplete()) {
-            alert('Please complete your profile (name/organization, phone, address) before placing an order.');
-            navigate(role === 'ngo' ? '/ngo' : '/customer');
-            return;
-        }
-        if (!selectedAddress) {
-            alert('Please select a delivery address');
-            return;
-        }
-
         try {
             setIsSubmittingOrder(true);
             const profileAddress = user?.profile?.address || {};
             const shippingAddress = {
                 firstName: user?.profile?.firstName || user?.profile?.organizationName || user?.username || 'User',
                 lastName: user?.profile?.lastName || '-',
-                street: selectedAddress || profileAddress?.street || '',
-                city: profileAddress?.city || '',
-                state: profileAddress?.state || '',
-                zipCode: profileAddress?.zipCode || '',
-                country: profileAddress?.country || '',
+                street: selectedAddress || profileAddress?.street || 'N/A',
+                city: profileAddress?.city || 'N/A',
+                state: profileAddress?.state || 'N/A',
+                zipCode: profileAddress?.zipCode || '000000',
+                country: profileAddress?.country || 'N/A',
                 phone: user?.profile?.phone || ''
             };
 
@@ -302,6 +278,68 @@ const Checkout = () => {
                 {loading ? (
                     <div>
                         <p>Loading cart...</p>
+                    </div>
+                ) : showSuccess ? (
+                    <div className="checkout-content">
+                        <div className="order-summary">
+                            <h3>Order Placed Successfully</h3>
+                            <div className="banner success">
+                                Your order has been placed successfully.
+                            </div>
+                            <p><strong>Order ID:</strong> {createdOrderId || 'Generated'}</p>
+                            <p>You can continue shopping now.</p>
+
+                            {pendingRatings.length > 0 && (
+                                <div className="card" style={{ marginTop: '1rem' }}>
+                                    <h3>Rate Your Purchase</h3>
+                                    {pendingRatings.map((sellerRating) => (
+                                        <div key={sellerRating.sellerId} className="info-field" style={{ marginBottom: '0.75rem' }}>
+                                            <label>{sellerRating.sellerName}</label>
+                                            <select
+                                                value={sellerRating.rating}
+                                                onChange={(e) =>
+                                                    setPendingRatings((prev) =>
+                                                        prev.map((item) =>
+                                                            item.sellerId === sellerRating.sellerId
+                                                                ? { ...item, rating: Number(e.target.value) }
+                                                                : item
+                                                        )
+                                                    )
+                                                }
+                                            >
+                                                <option value={5}>5 - Excellent</option>
+                                                <option value={4}>4 - Good</option>
+                                                <option value={3}>3 - Average</option>
+                                                <option value={2}>2 - Poor</option>
+                                                <option value={1}>1 - Very Poor</option>
+                                            </select>
+                                            <textarea
+                                                placeholder="Optional feedback"
+                                                value={sellerRating.comment}
+                                                onChange={(e) =>
+                                                    setPendingRatings((prev) =>
+                                                        prev.map((item) =>
+                                                            item.sellerId === sellerRating.sellerId
+                                                                ? { ...item, comment: e.target.value }
+                                                                : item
+                                                        )
+                                                    )
+                                                }
+                                            />
+                                            <button className="primary" onClick={() => submitSellerRating(sellerRating)}>
+                                                Submit Rating
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="checkout-actions">
+                                <button className="primary" onClick={() => navigate('/home')}>
+                                    Continue Shopping
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 ) : cartItems.length === 0 ? (
                     <div>

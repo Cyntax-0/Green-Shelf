@@ -1,5 +1,7 @@
 export function normalizeRole(role) {
-  return String(role ?? '').trim().toLowerCase();
+  const normalized = String(role ?? '').trim().toLowerCase();
+  if (normalized === 'user') return 'customer';
+  return normalized;
 }
 
 /**
